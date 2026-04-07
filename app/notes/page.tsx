@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { fetchNoteById } from "@/lib/api";
-import NoteDetailsClient from "./[id]/Notes.client";
+import NoteDetailsClient from "./notes.client";
 
 export default async function NotesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; // В Next.js 15 params треба await-ити

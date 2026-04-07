@@ -1,10 +1,9 @@
 "use client";
-
-// Потрібно явно вказати тип для error
-export default function Error({ error }: { error: Error }) {
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div>
-      <p>Could not fetch the list of notes. {error.message}</p>
+      <p>Could not fetch the data. {error.message}</p>
+      <button onClick={() => reset()}>Try again</button>
     </div>
   );
 }
