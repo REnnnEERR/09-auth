@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import css from './Modal.module.css';
 
@@ -9,10 +9,14 @@ interface ModalProps {
   onClose: () => void;
 }
 
-const Modal = ({ children, onClose }: ModalProps) => {
-  useEffect(() => {
-    let root = document.getElementById('modal-root');
+export const Modal = ({ children, onClose }: ModalProps) => {
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setMounted(true);
+    
+    let root = document.getElementById('modal-root');
     if (!root) {
       root = document.createElement('div');
       root.setAttribute('id', 'modal-root');
@@ -33,8 +37,7 @@ const Modal = ({ children, onClose }: ModalProps) => {
     };
   }, [onClose]);
 
-  
-  if (typeof window === 'undefined') return null;
+  if (!mounted) return null;
 
   const modalRoot = document.getElementById('modal-root');
   if (!modalRoot) return null;
@@ -51,5 +54,3 @@ const Modal = ({ children, onClose }: ModalProps) => {
     modalRoot
   );
 };
-
-export default Modal;
