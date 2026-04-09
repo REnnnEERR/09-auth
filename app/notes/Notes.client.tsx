@@ -26,7 +26,6 @@ export default function NotesClient() {
   const { data, isLoading } = useQuery({
     queryKey: ["notes", page, debouncedSearch],
     queryFn: () => fetchNotes(page, debouncedSearch),
-    
     placeholderData: keepPreviousData,
   });
 
@@ -43,20 +42,27 @@ export default function NotesClient() {
         <p>Loading, please wait...</p>
       ) : (
         <>
-          <NoteList notes={data?.notes || []} />
-          <Pagination
-            pageCount={data?.totalPages || 1}
-            currentPage={page} 
-            onPageChange={(p: { selected: number }) => setPage(p.selected + 1)}
-          />
+          {data?.notes && data.notes.length > 0 && (
+            <NoteList notes={data.notes} />
+          )}
+
+          {data?.totalPages && data.totalPages > 1 && (
+            <Pagination
+              pageCount={data.totalPages}
+              currentPage={page}
+              onPageChange={(p: { selected: number }) =>
+                setPage(p.selected + 1)
+              }
+            />
+          )}
         </>
       )}
 
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm 
-            onSuccess={() => setIsModalOpen(false)} 
-            onCancel={() => setIsModalOpen(false)} 
+          <NoteForm
+            onSuccess={() => setIsModalOpen(false)}
+            onCancel={() => setIsModalOpen(false)}
           />
         </Modal>
       )}

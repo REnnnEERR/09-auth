@@ -13,8 +13,8 @@ export default function NoteDetailsClient({ id }: { id: string }) {
     enabled: !!id,
   });
 
-  if (isLoading) return <p>Завантажую...</p>;
-  if (error || !note) return <p>Сталася помилка.</p>;
+  if (isLoading) return <p>Loading, please wait...</p>;
+if (error || !note) return <p>Something went wrong.</p>;
 
   return (
     <div className={css.container}>

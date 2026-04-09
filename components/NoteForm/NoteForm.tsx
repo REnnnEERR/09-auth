@@ -1,10 +1,10 @@
 "use client";
 
-import { Formik, Form, Field, ErrorMessage } from "formik"; 
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote } from "@/lib/api";
-import { NoteTag } from "@/types/note"; 
+import { NoteTag } from "@/types/note";
 import css from "./NoteForm.module.css";
 
 interface NoteFormProps {
@@ -18,12 +18,11 @@ interface FormValues {
   tag: NoteTag;
 }
 
-
 const validationSchema = Yup.object({
   title: Yup.string().required("Title is required").min(3, "Too short"),
-  content: Yup.string().max(500, "Too long"), 
+  content: Yup.string().max(500, "Too long"),
   tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"], "Invalid tag") 
+    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
     .required("Tag is required"),
 });
 
@@ -41,7 +40,7 @@ const NoteForm = ({ onCancel, onSuccess }: NoteFormProps) => {
   const initialValues: FormValues = {
     title: "",
     content: "",
-    tag: "Personal" as NoteTag,
+    tag: "Personal",
   };
 
   return (
@@ -52,22 +51,21 @@ const NoteForm = ({ onCancel, onSuccess }: NoteFormProps) => {
     >
       {({ isSubmitting }) => (
         <Form className={css.form}>
-          <div className={css.field}>
+          <div className={css.formGroup}>
             <label htmlFor="title">Title</label>
             <Field name="title" id="title" type="text" className={css.input} />
-            {/* Використовуємо компонент ErrorMessage */}
             <ErrorMessage name="title" component="div" className={css.error} />
           </div>
 
-          <div className={css.field}>
+          <div className={css.formGroup}>
             <label htmlFor="content">Content</label>
             <Field name="content" id="content" as="textarea" className={css.textarea} />
             <ErrorMessage name="content" component="div" className={css.error} />
           </div>
 
-          <div className={css.field}>
+          <div className={css.formGroup}>
             <label htmlFor="tag">Tag</label>
-            <Field name="tag" id="tag" as="select">
+            <Field name="tag" id="tag" as="select" className={css.select}>
               <option value="Todo">Todo</option>
               <option value="Work">Work</option>
               <option value="Personal">Personal</option>
@@ -78,13 +76,13 @@ const NoteForm = ({ onCancel, onSuccess }: NoteFormProps) => {
           </div>
 
           <div className={css.actions}>
-            <button type="button" onClick={onCancel} className={css.cancelBtn}>
+            <button type="button" onClick={onCancel} className={css.cancelButton}>
               Cancel
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className={css.submitBtn}
+              className={css.submitButton}
             >
               {mutation.isPending ? "Saving..." : "Save Note"}
             </button>
