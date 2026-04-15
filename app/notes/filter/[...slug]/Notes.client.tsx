@@ -7,6 +7,8 @@ import { fetchNotes } from "@/lib/api";
 import NoteList from "@/components/NoteList/NoteList";
 import Pagination from "@/components/Pagination/Pagination";
 import SearchBox from "@/components/SearchBox/SearchBox";
+import NoteForm from "@/components/NoteForm/NoteForm";
+import { Modal } from "@/components/Modal/Modal";
 import css from "@/app/notes/Notes.module.css";
 
 type Props = {
@@ -16,6 +18,7 @@ type Props = {
 export default function FilterNotesClient({ tag }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [debouncedSearch] = useDebounce(search, 500);
 
   const { data, isLoading } = useQuery({
@@ -28,6 +31,12 @@ export default function FilterNotesClient({ tag }: Props) {
     <section className={css.container}>
       <div className={css.controls}>
         <SearchBox value={search} onChange={setSearch} />
+        <button
+          className={css.addButton}
+          onClick={() => setIsModalOpen(true)}
+        >
+          Add New Note
+        </button>
       </div>
 
       {isLoading ? (
@@ -42,6 +51,16 @@ export default function FilterNotesClient({ tag }: Props) {
           />
         </>
       )}
+
+      {isModalOpen && (
+        <Modal onClose={() => setIsModalOpen(false)}>
+          <NoteForm
+            onCancel={() => setIsModalOpen(false)}
+            onSuccess={() => setIsModalOpen(false)}
+          />
+        </Modal>
+      )}
     </section>
   );
 }
+``
