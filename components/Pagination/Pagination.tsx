@@ -5,24 +5,21 @@ import css from './Pagination.module.css';
 
 interface PaginationProps {
   pageCount: number;
-  currentPage: number; 
+  currentPage: number;
   onPageChange: (selectedItem: { selected: number }) => void;
-
 }
 
-export const Pagination = ({ pageCount, currentPage, onPageChange}: PaginationProps) => {
+export const Pagination = ({ pageCount, currentPage, onPageChange }: PaginationProps) => {
   return (
     <ReactPaginate
-      forcePage={currentPage - 1} 
+      forcePage={currentPage - 1}
       pageCount={pageCount}
       onPageChange={onPageChange}
-      
       previousLabel="<"
       nextLabel=">"
       breakLabel="..."
       marginPagesDisplayed={2}
       pageRangeDisplayed={5}
-      
       containerClassName={css.pagination}
       activeClassName={css.active}
       pageClassName={css.pageItem}
@@ -36,3 +33,5 @@ export const Pagination = ({ pageCount, currentPage, onPageChange}: PaginationPr
     />
   );
 };
+
+export default Pagination;

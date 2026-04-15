@@ -22,18 +22,20 @@ export const metadata: Metadata = {
   description: "Simple and efficient application for managing personal notes",
 };
 
-export default function RootLayout({
+export default function NotesLayout({
   children,
-}: Readonly<{
+  modal,
+}: {
   children: React.ReactNode;
-}>) {
+  modal: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <TanStackProvider>
           <div className="app-wrapper">
             <Header />
-            <main>{children}</main>
+            <main>{children}{modal}</main>
             <Footer />
           </div>
         </TanStackProvider>

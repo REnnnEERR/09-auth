@@ -1,14 +1,27 @@
+
 export default function NotesLayout({
   children,
   modal,
+  sidebar, 
 }: {
   children: React.ReactNode;
   modal: React.ReactNode;
+  sidebar: React.ReactNode;
 }) {
   return (
-    <>
-      {children}
+    <div style={{ display: 'flex', gap: '24px', padding: '20px' }}>
+      
+      <aside style={{ width: '250px', flexShrink: 0 }}>
+        {sidebar}
+      </aside>
+
+      
+      <main style={{ flex: 1 }}>
+        {children}
+      </main>
+
+      
       {modal}
-    </>
+    </div>
   );
 }

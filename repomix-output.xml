@@ -49,10 +49,15 @@ app/notes/[id]/error.tsx
 app/notes/[id]/NoteDetails.client.tsx
 app/notes/[id]/NoteDetails.module.css
 app/notes/[id]/page.tsx
+app/notes/@modal/(..)notes/[id]/page.tsx
+app/notes/@modal/default.tsx
+app/notes/@sidebar/default.tsx
+app/notes/@sidebar/filter/[[...slug]]/page.tsx
+app/notes/@sidebar/filter/[[...slug]]/SidebarNotes.module.css
+app/notes/@sidebar/filter/layout.tsx
+app/notes/default.tsx
 app/notes/error.tsx
-app/notes/filter/[...slug]/page.tsx
-app/notes/filter/@sidebar/page.tsx
-app/notes/filter/layout.tsx
+app/notes/layout.tsx
 app/notes/Notes.client.tsx
 app/notes/Notes.module.css
 app/notes/page.tsx
@@ -71,6 +76,8 @@ components/NoteForm/NoteForm.module.css
 components/NoteForm/NoteForm.tsx
 components/NoteList/NoteList.module.css
 components/NoteList/NoteList.tsx
+components/NotePreview/NotePreview.module.css
+components/NotePreview/NotePreview.tsx
 components/NotesPage/NotesPage.module.css
 components/NotesPage/NotesPage.tsx
 components/Pagination/Pagination.module.css
@@ -97,86 +104,82 @@ types/note.ts
 <files>
 This section contains the contents of the repository's files.
 
-<file path="app/not-found.tsx">
-import Link from 'next/link';
-import css from './NotFound.module.css';
-
-const NotFound = () => {
-  return (
-    <div>
-      <h1 className={css.title}>404 - Page not found</h1>
-<p className={css.description}>Sorry, the page you are looking for does not exist.</p>
-      <Link href="/">Go back home</Link>
-    </div>
-  );
-};
-
-export default NotFound;
+<file path="app/notes/@modal/default.tsx">
+export default function Default() {
+  return null;
+}
 </file>
 
-<file path="app/notes/filter/[...slug]/page.tsx">
-import { getNotes } from '@/lib/api';
-import NoteList from '@/components/NoteList/NoteList';
+<file path="app/notes/@sidebar/default.tsx">
+import SidebarNotes from './filter/[[...slug]]/page'; 
 
-type Props = {
-  params: Promise<{ slug: string[] }>;
-};
-
-const NotesByCategory = async ({ params }: Props) => {
-  const { slug } = await params;
-  const tag = slug[0] === 'all' ? undefined : slug[0];
-const notes = await getNotes(tag);
-
-  return (
-    <div>
-      <h1>Notes List</h1>
-      {response?.notes?.length > 0 && <NoteList notes={response.notes} />}
-    </div>
-  );
-};
-
-export default NotesByCategory;
+export default function Default() {
+  return <SidebarNotes />;
+}
 </file>
 
-<file path="app/notes/filter/@sidebar/page.tsx">
-import Link from 'next/link';
-import css from './SidebarNotes.module.css';
+<file path="app/notes/@sidebar/filter/[[...slug]]/page.tsx">
+import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
+import { fetchNotes } from '@/lib/api';
+import NotesClient from '@/app/notes/Notes.client';
 
-const tags = ['Work', 'Personal', 'Study', 'Health']; // Твої теги
+// Визначаємо тип параметрів чітко за специфікацією Next.js 15
+type Params = Promise<{ slug?: string[] }>;
 
-const SidebarNotes = () => {
+export default async function FilteredNotesPage(props: { params: Params }) {
+  const queryClient = new QueryClient();
+  
+  // Розпаковуємо параметри
+  const { slug } = await props.params;
+  const tag = slug?.[0];
+  const activeTag = tag === 'all' ? undefined : tag;
+
+  // SSR предфетчинг
+  await queryClient.prefetchQuery({
+    queryKey: ['notes', 1, '', activeTag],
+    queryFn: () => fetchNotes(1, '', 12, activeTag),
+  });
+
   return (
-    <ul className={css.menuList}>
-      <li className={css.menuItem}>
-        <Link href={`/notes/filter/Work`} className={css.menuLink}>Work</Link>
-          </li>
-          <li className={css.menuItem}>
-        <Link href={`/notes/filter/Personal`} className={css.menuLink}>Personal</Link>
-          </li>
-          <li className={css.menuItem}>
-        <Link href={`/notes/filter/Todo`} className={css.menuLink}>Todo</Link>
-          </li>
-          <li className={css.menuItem}>
-        <Link href={`/notes/filter/Meeting`} className={css.menuLink}>Meeting</Link>
-          </li>
-          <li className={css.menuItem}>
-        <Link href={`/notes/filter/Shopping`} className={css.menuLink}>Shopping</Link>
-      </li>
-      {tags.map((tag) => (
-        <li key={tag} className={css.menuItem}>
-          <Link href={`/notes/filter/${tag}`} className={css.menuLink}>
-            {tag}
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      {/* Передаємо проміс у клієнт */}
+      <NotesClient params={props.params} />
+    </HydrationBoundary>
   );
-};
-
-export default SidebarNotes;
+}
 </file>
 
-<file path="app/notes/filter/layout.tsx">
+<file path="app/notes/@sidebar/filter/[[...slug]]/SidebarNotes.module.css">
+.menuList {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menuItem {
+    margin-bottom: 16px;
+}
+
+.menuLink {
+    text-decoration: none;
+    color: white;
+    font-size: 16px;
+    display: block;
+    padding: 8px 16px;
+    transition: background-color 0.3s ease;
+}
+
+.menuLink:hover {
+    background-color: #444;
+    color: #ddd;
+}
+
+.menuLink {
+    background-color: #333;
+}
+</file>
+
+<file path="app/notes/@sidebar/filter/layout.tsx">
 import React from 'react';
 
 export default function FilterLayout({
@@ -195,49 +198,109 @@ export default function FilterLayout({
 }
 </file>
 
-<file path="app/NotFound.module.css">
-.title {
-    font-size: 120px;
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -5px;
-    background: linear-gradient(90deg, #ff8a00, #060606);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.1));
-    text-align: center;
+<file path="app/notes/default.tsx">
+export default function Default() {
+  return null;
 }
+</file>
 
-
-.description {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.5rem;
-    color: #333;
-    margin: 20px 0;
-    text-align: center;
-    font-weight: 300;
-}
-
-
-.description+a {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 12px 30px;
-    background-color: #000;
-    color: #fff;
-    text-decoration: none;
+<file path="components/NotePreview/NotePreview.module.css">
+.container {
+    max-width: 800px;
+    margin: 32px auto;
+    padding: 24px;
+    background-color: #ffffff;
     border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.description+a:hover {
-    background-color: #8d4521;
-    transform: scale(1.05);
-    box-shadow: 0 10px 20px rgba(229, 46, 113, 0.3);
+.item {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 28px;
+    color: #333;
+}
+
+.content {
+    font-size: 18px;
+    line-height: 26px;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+.date {
+    font-size: 14px;
+    color: #888;
+    text-align: right;
+}
+
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #0d6efd;
+    background-color: #e7f1ff;
+    border: 1px solid #b6d4fe;
+    border-radius: 12px;
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.backBtn {
+    align-self: flex-start;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: underline;
+    display: inline-block;
+    background-color: transparent;
+}
+</file>
+
+<file path="components/NotePreview/NotePreview.tsx">
+import { Note } from "@/types/note";
+import css from "./NotePreview.module.css";
+
+interface NotePreviewProps {
+  note: Note;
+}
+
+export const NotePreview = ({ note }: NotePreviewProps) => {
+  return (
+    <div className={css.container}>
+      <div className={css.item}>
+        <div className={css.header}>
+          <h2>{note.title}</h2>
+          <span className={css.tag}>{note.tag}</span>
+        </div>
+        <div className={css.content}>
+          {note.content}
+        </div>
+        <div className={css.date}>
+          Created: {new Date(note.createdAt).toLocaleDateString()}
+        </div>
+      </div>
+    </div>
+  );
+};
 </file>
 
 <file path=".gitignore">
@@ -287,6 +350,130 @@ next-env.d.ts
 <file path="app/loading.tsx">
 export default function Loading() {
   return <p>Loading, please wait...</p>;
+}
+</file>
+
+<file path="app/not-found.tsx">
+import Link from 'next/link';
+import css from './NotFound.module.css';
+
+const NotFound = () => {
+  return (
+    <div>
+      <h1 className={css.title}>404 - Page not found</h1>
+<p className={css.description}>Sorry, the page you are looking for does not exist.</p>
+      <Link href="/">Go back home</Link>
+    </div>
+  );
+};
+
+export default NotFound;
+</file>
+
+<file path="app/notes/@modal/(..)notes/[id]/page.tsx">
+"use client";
+
+import { use } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchNoteById } from "@/lib/api";
+import { Modal } from "@/components/Modal/Modal";
+import { NotePreview } from "@/components/NotePreview/NotePreview";
+
+export default function NotePreviewModal({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+
+  
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
+
+  const { data: note, isLoading, isError } = useQuery({
+    queryKey: ["note", id],
+    queryFn: () => fetchNoteById(id),
+    enabled: !!id,
+  });
+
+  return (
+    <Modal onClose={() => router.back()}>
+      {isLoading && <p>Завантаження...</p>}
+      {isError && <p>Помилка завантаження ID: {id}</p>}
+      {note && <NotePreview note={note} />}
+    </Modal>
+  );
+}
+</file>
+
+<file path="app/notes/layout.tsx">
+export default function NotesLayout({
+  children,
+  modal,
+  sidebar, 
+}: {
+  children: React.ReactNode;
+  modal: React.ReactNode;
+  sidebar: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: '24px', padding: '20px' }}>
+      
+      <aside style={{ width: '250px', flexShrink: 0 }}>
+        {sidebar}
+      </aside>
+
+      
+      <main style={{ flex: 1 }}>
+        {children}
+      </main>
+
+      
+      {modal}
+    </div>
+  );
+}
+</file>
+
+<file path="app/NotFound.module.css">
+.title {
+    font-size: 120px;
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -5px;
+    background: linear-gradient(90deg, #ff8a00, #060606);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.1));
+    text-align: center;
+}
+
+
+.description {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    font-size: 1.5rem;
+    color: #333;
+    margin: 20px 0;
+    text-align: center;
+    font-weight: 300;
+}
+
+
+.description+a {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 30px;
+    background-color: #000;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.description+a:hover {
+    background-color: #8d4521;
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(229, 46, 113, 0.3);
 }
 </file>
 
@@ -1344,7 +1531,6 @@ export const Pagination = ({ pageCount, currentPage, onPageChange}: PaginationPr
 </file>
 
 <file path="app/notes/[id]/NoteDetails.client.tsx">
-// app/notes/[id]/NoteDetails.client.tsx
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
@@ -1415,58 +1601,6 @@ export default function HomePage() {
 }
 </file>
 
-<file path="lib/api.ts">
-import axios from 'axios';
-import type { Note } from '../types/note';
-
-// Функція для створення екземпляра Axios
-const getApi = () => {
-  return axios.create({
-    baseURL: 'https://notehub-public.goit.study/api',
-    headers: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-    },
-  });
-};
-
-export interface FetchNotesResponse {
-  notes: Note[];
-  totalPages: number;
-}
-
-// Отримання списку нотаток
-export const fetchNotes = async (
-  page: number = 1,
-  search: string = '',
-  perPage: number = 12
-): Promise<FetchNotesResponse> => {
-  const response = await getApi().get<FetchNotesResponse>('/notes', {
-    params: { page, perPage, search },
-  });
-  return response.data;
-};
-
-
-export const createNote = async (
-  noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>
-): Promise<Note> => {
-  const response = await getApi().post<Note>('/notes', noteData);
-  return response.data;
-};
-
-// Видалення нотатки
-export const deleteNote = async (noteId: string): Promise<Note> => {
-  const response = await getApi().delete<Note>(`/notes/${noteId}`);
-  return response.data;
-};
-
-// Отримання однієї нотатки по ID
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const { data } = await getApi().get<Note>(`/notes/${id}`);
-  return data;
-};
-</file>
-
 <file path="app/layout.tsx">
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -1492,18 +1626,20 @@ export const metadata: Metadata = {
   description: "Simple and efficient application for managing personal notes",
 };
 
-export default function RootLayout({
+export default function NotesLayout({
   children,
-}: Readonly<{
+  modal,
+}: {
   children: React.ReactNode;
-}>) {
+  modal: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <TanStackProvider>
           <div className="app-wrapper">
             <Header />
-            <main>{children}</main>
+            <main>{children}{modal}</main>
             <Footer />
           </div>
         </TanStackProvider>
@@ -1513,64 +1649,31 @@ export default function RootLayout({
 }
 </file>
 
-<file path="components/Modal/Modal.tsx">
-"use client";
+<file path="lib/api.ts">
+import axios from 'axios';
+import { FetchNotesResponse } from '@/types/note';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import css from './Modal.module.css';
+const getApi = () => {
+  return axios.create({
+    baseURL: 'https://notehub-public.goit.study/api', 
+  });
+};
 
-interface ModalProps {
-  children: React.ReactNode;
-  onClose: () => void;
-}
-
-export const Modal = ({ children, onClose }: ModalProps) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  setMounted(true); 
-  
-  document.body.style.overflow = "hidden";
-    
-    let root = document.getElementById('modal-root');
-    if (!root) {
-      root = document.createElement('div');
-      root.setAttribute('id', 'modal-root');
-      document.body.appendChild(root);
-    }
-
-    document.body.style.overflow = 'hidden';
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = 'unset';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onClose]);
-
-  if (!mounted) return null;
-
-  const modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) return null;
-
-  return createPortal(
-    <div
-      className={css.backdrop}
-      onClick={(e) => {
-        if (e.currentTarget === e.target) onClose();
-      }}
-    >
-      <div className={css.modal}>{children}</div>
-    </div>,
-    modalRoot
-  );
+export const fetchNotes = async (
+  page: number = 1,
+  search: string = '',
+  perPage: number = 12,
+  tag?: string 
+): Promise<FetchNotesResponse> => {
+  const response = await getApi().get<FetchNotesResponse>('/notes', {
+    params: { 
+      page, 
+      perPage, 
+      search,
+      ...(tag && tag !== 'all' ? { tag } : {}) 
+    },
+  });
+  return response.data;
 };
 </file>
 
@@ -1624,24 +1727,21 @@ export interface Note {
 </file>
 
 <file path="app/notes/[id]/page.tsx">
-// app/notes/[id]/page.tsx
-import { HydrationBoundary, dehydrate, QueryClient } from '@tanstack/react-query';
-import { fetchNoteById } from '@/lib/api';
-import NoteDetailsClient from './NoteDetails.client';
+"use client";
 
-export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const queryClient = new QueryClient();
+import { use } from "react";
 
-  await queryClient.prefetchQuery({
-    queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
-  });
+
+export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
+  
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NoteDetailsClient id={id} />
-    </HydrationBoundary>
+    <div className="p-10">
+      <h1>Сторінка нотатки: {id}</h1>
+      {/* Твій контент сторінки */}
+    </div>
   );
 }
 </file>
@@ -1649,75 +1749,121 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 <file path="app/notes/Notes.client.tsx">
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react"; 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { fetchNotes } from "@/lib/api";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import { Pagination } from "@/components/Pagination/Pagination";
-import NoteList from "@/components/NoteList/NoteList";
-import { Modal } from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
+import NoteCard from "@/components/NoteCard/NoteCard";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBar from "@/components/SearchBar/SearchBar";
 import css from "./Notes.module.css";
 
-export default function NotesClient() {
+// Спробуй цей максимально гнучкий інтерфейс
+interface NotesClientProps {
+  params: Promise<{ slug?: string[] }>;
+}
+
+export default function NotesClient({ params }: NotesClientProps) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Використовуємо use() для розпакування. 
+  // Якщо тут помилка — спробуй: const resolvedParams = use(params) as any;
+  const resolvedParams = use(params);
+  const tagFromUrl = resolvedParams?.slug?.[0];
+  const activeTag = tagFromUrl === 'all' ? undefined : tagFromUrl;
 
   const [debouncedSearch] = useDebounce(search, 500);
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
-
   const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch],
-    queryFn: () => fetchNotes(page, debouncedSearch),
+    queryKey: ["notes", page, debouncedSearch, activeTag], 
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, activeTag),
     placeholderData: keepPreviousData,
   });
 
   return (
-    <main className={css.container}>
+    <section className={css.container}>
       <div className={css.controls}>
-        <SearchBox value={search} onChange={handleSearchChange} />
-        <button onClick={() => setIsModalOpen(true)} className={css.addButton}>
-          Add New Note
-        </button>
+        <SearchBar value={search} onChange={setSearch} />
+        <button className={css.addButton}>Add New Note</button>
       </div>
 
-      {isLoading && !data ? (
-        <p>Loading, please wait...</p>
+      {isLoading ? (
+        <p>Loading notes...</p>
       ) : (
         <>
-          {data?.notes && data.notes.length > 0 && (
-            <NoteList notes={data.notes} />
-          )}
-
-          {data?.totalPages && data.totalPages > 1 && (
-            <Pagination
-              pageCount={data.totalPages}
-              currentPage={page}
-              onPageChange={(p: { selected: number }) =>
-                setPage(p.selected + 1)
-              }
-            />
-          )}
+          <div className={css.grid}>
+            {data?.notes.map((note) => (
+              <NoteCard key={note.id} note={note} />
+            ))}
+          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={data?.totalPages || 1}
+            onPageChange={setPage}
+          />
         </>
       )}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onSuccess={() => setIsModalOpen(false)}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        </Modal>
-      )}
-    </main>
+    </section>
   );
 }
+</file>
+
+<file path="components/Modal/Modal.tsx">
+"use client";
+
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import css from './Modal.module.css';
+
+interface ModalProps {
+  children: React.ReactNode;
+  onClose: () => void;
+}
+
+export const Modal = ({ children, onClose }: ModalProps) => {
+
+  useEffect(() => {
+    let root = document.getElementById('modal-root');
+
+    if (!root) {
+      root = document.createElement('div');
+      root.setAttribute('id', 'modal-root');
+      document.body.appendChild(root);
+    }
+
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  // 🔥 головна фішка — перевірка на client
+  if (typeof window === 'undefined') return null;
+
+  const modalRoot = document.getElementById('modal-root');
+  if (!modalRoot) return null;
+
+  return createPortal(
+    <div
+      className={css.backdrop}
+      onClick={(e) => {
+        if (e.currentTarget === e.target) onClose();
+      }}
+    >
+      <div className={css.modal}>{children}</div>
+    </div>,
+    modalRoot
+  );
+};
 </file>
 
 <file path="components/NoteForm/NoteForm.tsx">
