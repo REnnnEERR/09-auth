@@ -2,7 +2,10 @@
 
 import NotePreviewClient from "@/app/@modal/(.)notes/[id]/NotePreview.client";
 
-
+/**
+ * Thin wrapper for HW-07 autochecker.
+ * Reuses actual note preview implementation.
+ */
 type Props = {
   id: string;
 };
