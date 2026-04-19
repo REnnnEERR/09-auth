@@ -1,30 +1,50 @@
+import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { fetchNotes } from "@/lib/api";
-import NotesClient from "./Notes.client";
+import FilterNotesClient from "./Notes.client";
 
-type Params = Promise<{
-  slug?: string[];
-}>;
+type Params = {
+  params: {
+    slug?: string[];
+  };
+};
 
-export default async function FilteredNotesPage({
-  params,
-}: {
-  params: Params;
-}) {
-  const resolvedParams = await params;
-  const tag = resolvedParams.slug?.[0];
-  const activeTag = tag === "all" ? undefined : tag;
+export async function generateMetadata(
+  { params }: Params
+): Promise<Metadata> {
+  const tag = params.slug?.[0] ?? "all";
 
+  return {
+    title: `Notes (${tag}) | NoteHub`,
+    description: `Notes filtered by tag: ${tag}`,
+    openGraph: {
+      title: `Notes (${tag}) | NoteHub`,
+      description: `Notes filtered by tag: ${tag}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Notes filter",
+        },
+      ],
+    },
+  };
+}
+
+export default async function FilteredNotesPage({ params }: Params) {
   const queryClient = new QueryClient();
+  const tag = params.slug?.[0];
 
   await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", activeTag],
-    queryFn: () => fetchNotes(1, "", 12, activeTag),
+    queryKey: ["notes", 1, "", tag],
+    queryFn: () => fetchNotes(1, "", 12, tag),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient tag={activeTag} />
+      <FilterNotesClient tag={tag} />
     </HydrationBoundary>
   );
 }
