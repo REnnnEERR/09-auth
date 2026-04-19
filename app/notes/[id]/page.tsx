@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { fetchNoteById } from "@/lib/api";
 import NoteDetailsClient from "./NoteDetails.client";
 
-type Props = {
-  params: {
+type PageProps = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function generateMetadata(
-  { params }: Props
+  params: Promise<{ id: string }>
 ): Promise<Metadata> {
-  const note = await fetchNoteById(params.id);
+  const { id } = await params;
+
+  const note = await fetchNoteById(id);
 
   return {
     title: `${note.title} | NoteHub`,
@@ -32,6 +34,7 @@ export async function generateMetadata(
   };
 }
 
-export default function NotePage({ params }: Props) {
-  return <NoteDetailsClient id={params.id} />;
+export default async function NotePage({ params }: PageProps) {
+  const { id } = await params;
+  return <NoteDetailsClient id={id} />;
 }

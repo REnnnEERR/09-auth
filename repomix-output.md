@@ -45,6 +45,8 @@ app/not-found.tsx
 app/notes/[id]/error.tsx
 app/notes/[id]/NoteDetails.client.tsx
 app/notes/[id]/page.tsx
+app/notes/action/create/CreateNote.module.css
+app/notes/action/create/page.tsx
 app/notes/default.tsx
 app/notes/error.tsx
 app/notes/filter/[...slug]/error.tsx
@@ -83,6 +85,7 @@ components/SidebarNotes/SidebarNotes.tsx
 components/TanStackProvider/TanStackProvider.tsx
 eslint.config.mjs
 lib/api.ts
+lib/store/noteStore.ts
 next.config.ts
 package.json
 project.txt
@@ -93,7 +96,6 @@ public/next.svg
 public/vercel.svg
 public/window.svg
 README.md
-repomix-output.xml
 tsconfig.json
 types/note.ts
 ```
@@ -159,22 +161,62 @@ export default function Loading() {
 }
 ````
 
-## File: app/not-found.tsx
-````typescript
-import Link from 'next/link';
-import css from './NotFound.module.css';
+## File: app/notes/action/create/CreateNote.module.css
+````css
+.main {
+    flex: 1;
+}
 
-const NotFound = () => {
-  return (
-    <div>
-      <h1 className={css.title}>404 - Page not found</h1>
-<p className={css.description}>Sorry, the page you are looking for does not exist.</p>
-      <Link href="/">Go back home</Link>
-    </div>
-  );
+.container {
+    width: 90%;
+    max-width: 1280px;
+    margin: 0px auto;
+    padding: 0 16px 16px;
+}
+
+.title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 60px;
+    text-align: center;
+}
+````
+
+## File: app/notes/action/create/page.tsx
+````typescript
+import type { Metadata } from "next";
+import NoteForm from "@/components/NoteForm/NoteForm";
+import css from "./CreateNote.module.css";
+
+export const metadata: Metadata = {
+  title: "Create note | NoteHub",
+  description: "Create a new note in NoteHub",
+  openGraph: {
+    title: "Create note | NoteHub",
+    description: "Create a new note in NoteHub",
+    url: "https://notehub.vercel.app/notes/action/create",
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Create note",
+      },
+    ],
+  },
 };
 
-export default NotFound;
+export default function CreateNotePage() {
+  return (
+    <main className={css.main}>
+      <div className={css.container}>
+        <h1 className={css.title}>Create note</h1>
+        <NoteForm />
+      </div>
+    </main>
+  );
+}
 ````
 
 ## File: app/notes/filter/[...slug]/error.tsx
@@ -1070,6 +1112,46 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 ````
 
+## File: lib/store/noteStore.ts
+````typescript
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { NoteTag } from "@/types/note";
+
+export type DraftNote = {
+  title: string;
+  content: string;
+  tag: NoteTag;
+};
+
+const initialDraft: DraftNote = {
+  title: "",
+  content: "",
+  tag: "Todo",
+};
+
+type NoteStore = {
+  draft: DraftNote;
+  setDraft: (draft: DraftNote) => void;
+  clearDraft: () => void;
+};
+
+export const useNoteStore = create<NoteStore>()(
+  persist(
+    (set) => ({
+      draft: initialDraft,
+      setDraft: (draft) => set({ draft }),
+      clearDraft: () => set({ draft: initialDraft }),
+    }),
+    {
+      name: "note-draft-storage", // key у localStorage
+    }
+  )
+);
+
+export { initialDraft };
+````
+
 ## File: next.config.ts
 ````typescript
 import type { NextConfig } from "next";
@@ -1290,6 +1372,43 @@ body {
 #modal-root {
   position: relative;
   z-index: 9999;
+}
+````
+
+## File: app/not-found.tsx
+````typescript
+import type { Metadata } from "next";
+import Link from "next/link";
+import css from "./NotFound.module.css";
+
+export const metadata: Metadata = {
+  title: "Page not found | NoteHub",
+  description: "The page you are looking for does not exist",
+  openGraph: {
+    title: "404 — Page not found",
+    description: "This page does not exist on NoteHub",
+    url: "https://notehub.vercel.app/404",
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Page not found",
+      },
+    ],
+  },
+};
+
+export default function NotFound() {
+  return (
+    <div>
+      <h1 className={css.title}>404</h1>
+      <p className={css.description}>
+        Sorry, the page you are looking for does not exist.
+      </p>
+      <Link href="/">Go back home</Link>
+    </div>
+  );
 }
 ````
 
@@ -1578,2026 +1697,6 @@ export default function FilterLayout(props: Props) {
 }
 ````
 
-## File: repomix-output.xml
-````xml
-This file is a merged representation of the entire codebase, combined into a single document by Repomix.
-
-<file_summary>
-This section contains a summary of this file.
-
-<purpose>
-This file contains a packed representation of the entire repository's contents.
-It is designed to be easily consumable by AI systems for analysis, code review,
-or other automated processes.
-</purpose>
-
-<file_format>
-The content is organized as follows:
-1. This summary section
-2. Repository information
-3. Directory structure
-4. Repository files (if enabled)
-5. Multiple file entries, each consisting of:
-  - File path as an attribute
-  - Full contents of the file
-</file_format>
-
-<usage_guidelines>
-- This file should be treated as read-only. Any changes should be made to the
-  original repository files, not this packed version.
-- When processing this file, use the file path to distinguish
-  between different files in the repository.
-- Be aware that this file may contain sensitive information. Handle it with
-  the same level of security as you would the original repository.
-</usage_guidelines>
-
-<notes>
-- Some files may have been excluded based on .gitignore rules and Repomix's configuration
-- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching patterns in .gitignore are excluded
-- Files matching default ignore patterns are excluded
-- Files are sorted by Git change count (files with more changes are at the bottom)
-</notes>
-
-</file_summary>
-
-<directory_structure>
-.gitignore
-app/globals.css
-app/layout.tsx
-app/loading.tsx
-app/not-found.tsx
-app/notes/[id]/error.tsx
-app/notes/[id]/NoteDetails.client.tsx
-app/notes/[id]/NoteDetails.module.css
-app/notes/[id]/page.tsx
-app/notes/@modal/(..)notes/[id]/page.tsx
-app/notes/@modal/default.tsx
-app/notes/@sidebar/default.tsx
-app/notes/default.tsx
-app/notes/error.tsx
-app/notes/filter/[[...slug]]/page.tsx
-app/notes/filter/[[...slug]]/SidebarNotes.module.css
-app/notes/filter/layout.tsx
-app/notes/layout.tsx
-app/notes/Notes.client.tsx
-app/notes/Notes.module.css
-app/notes/page.tsx
-app/NotFound.module.css
-app/page.module.css
-app/page.tsx
-components/Footer/Footer.module.css
-components/Footer/Footer.tsx
-components/Header/Header.module.css
-components/Header/Header.tsx
-components/Home/Home.module.css
-components/Home/Home.tsx
-components/Modal/Modal.module.css
-components/Modal/Modal.tsx
-components/NoteForm/NoteForm.module.css
-components/NoteForm/NoteForm.tsx
-components/NoteList/NoteList.module.css
-components/NoteList/NoteList.tsx
-components/NotePreview/NotePreview.module.css
-components/NotePreview/NotePreview.tsx
-components/NotesPage/NotesPage.module.css
-components/NotesPage/NotesPage.tsx
-components/Pagination/Pagination.module.css
-components/Pagination/Pagination.tsx
-components/SearchBox/SearchBox.module.css
-components/SearchBox/SearchBox.tsx
-components/SidebarNotes/SidebarNotes.module.css
-components/SidebarNotes/SidebarNotes.tsx
-components/TanStackProvider/TanStackProvider.tsx
-eslint.config.mjs
-lib/api.ts
-next.config.ts
-package.json
-project.txt
-public/file.svg
-public/globe.svg
-public/icon-svg.svg
-public/next.svg
-public/vercel.svg
-public/window.svg
-README.md
-tsconfig.json
-types/note.ts
-</directory_structure>
-
-<files>
-This section contains the contents of the repository's files.
-
-<file path="app/notes/filter/[[...slug]]/page.tsx">
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import NotesClient from "@/app/notes/Notes.client";
-
-type Params = Promise<{ slug?: string[] }>;
-
-export default async function FilteredNotesPage(props: { params: Params }) {
-  const queryClient = new QueryClient();
-  const params = await props.params;
-  const tag = params?.slug?.[0];
-  const activeTag = tag === "all" ? undefined : tag;
-
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", activeTag],
-    queryFn: () => fetchNotes(1, "", 12, activeTag),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient params={props.params} />
-    </HydrationBoundary>
-  );
-}
-</file>
-
-<file path="app/notes/filter/[[...slug]]/SidebarNotes.module.css">
-.menuList {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-}
-
-.menuItem {
-    margin-bottom: 16px;
-}
-
-.menuLink {
-    text-decoration: none;
-    color: white;
-    font-size: 16px;
-    display: block;
-    padding: 8px 16px;
-    transition: background-color 0.3s ease;
-}
-
-.menuLink:hover {
-    background-color: #444;
-    color: #ddd;
-}
-
-.menuLink {
-    background-color: #333;
-}
-</file>
-
-<file path="components/SidebarNotes/SidebarNotes.module.css">
-.menuList {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-}
-
-.menuItem {
-    margin-bottom: 8px;
-}
-
-.menuLink {
-    text-decoration: none;
-    color: white;
-    font-size: 16px;
-    display: block;
-    padding: 8px 16px;
-    background-color: #333;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-.menuLink:hover {
-    background-color: #444;
-    color: #ddd;
-}
-</file>
-
-<file path="components/SidebarNotes/SidebarNotes.tsx">
-import Link from "next/link";
-import css from "./SidebarNotes.module.css";
-
-const TAGS = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
-
-export default function SidebarNotes() {
-  return (
-    <ul className={css.menuList}>
-      <li className={css.menuItem}>
-        <Link href="/notes/filter/all" className={css.menuLink}>
-          All notes
-        </Link>
-      </li>
-      {TAGS.map((tag) => (
-        <li key={tag} className={css.menuItem}>
-          <Link href={`/notes/filter/${tag}`} className={css.menuLink}>
-            {tag}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-</file>
-
-<file path=".gitignore">
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-</file>
-
-<file path="app/loading.tsx">
-export default function Loading() {
-  return <p>Loading, please wait...</p>;
-}
-</file>
-
-<file path="app/not-found.tsx">
-import Link from 'next/link';
-import css from './NotFound.module.css';
-
-const NotFound = () => {
-  return (
-    <div>
-      <h1 className={css.title}>404 - Page not found</h1>
-<p className={css.description}>Sorry, the page you are looking for does not exist.</p>
-      <Link href="/">Go back home</Link>
-    </div>
-  );
-};
-
-export default NotFound;
-</file>
-
-<file path="app/notes/@modal/default.tsx">
-export default function Default() {
-  return null;
-}
-</file>
-
-<file path="app/notes/@sidebar/default.tsx">
-import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
-
-export default function Default() {
-  return <SidebarNotes />;
-}
-</file>
-
-<file path="app/notes/default.tsx">
-import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
-
-export default function Default() {
-  return <SidebarNotes />;
-}
-</file>
-
-<file path="app/notes/filter/layout.tsx">
-import React from 'react';
-
-export default function FilterLayout({
-  children,
-  sidebar,
-}: {
-  children: React.ReactNode;
-  sidebar: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: 'flex', gap: '20px' }}>
-      <aside style={{ width: '250px' }}>{sidebar}</aside>
-      <main style={{ flex: 1 }}>{children}</main>
-    </div>
-  );
-}
-</file>
-
-<file path="app/NotFound.module.css">
-.title {
-    font-size: 120px;
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -5px;
-    background: linear-gradient(90deg, #ff8a00, #060606);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.1));
-    text-align: center;
-}
-
-
-.description {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.5rem;
-    color: #333;
-    margin: 20px 0;
-    text-align: center;
-    font-weight: 300;
-}
-
-
-.description+a {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 12px 30px;
-    background-color: #000;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.description+a:hover {
-    background-color: #8d4521;
-    transform: scale(1.05);
-    box-shadow: 0 10px 20px rgba(229, 46, 113, 0.3);
-}
-</file>
-
-<file path="app/page.module.css">
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1a1;
-
-  --button-primary-hover: #000000;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
-  /* background-color: black; */
-}
-
-.main {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
-  /* background-color: black; */
-}
-
-.intro {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
-}
-
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
-}
-
-.ctas a {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
-}
-
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
-}
-
-a.secondary {
-  border-color: var(--button-secondary-border);
-}
-
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
-}
-
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
-  }
-
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-  }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
-  }
-}
-</file>
-
-<file path="components/Footer/Footer.module.css">
-.footer {
-    padding: 20px;
-    background-color: #f0f0f0;
-    text-align: center;
-    font-size: 14px;
-    color: #555;
-    border-top: 1px solid #ddd;
-}
-
-.wrap {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.footer a {
-    color: #226ec5;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.footer a:hover {
-    text-decoration: underline;
-}
-</file>
-
-<file path="components/Footer/Footer.tsx">
-import Link from "next/link"; 
-import css from "./Footer.module.css";
-
-export default function Footer() {
-  return (
-    <footer className={css.footer}>
-  <div className={css.content}>
-    <p>© {new Date().getFullYear()} NoteHub. All rights reserved.</p>
-    <div className={css.wrap}>
-      <p>Developer: your name</p>
-      <p>
-        Contact us:
-        <Link href="mailto:student@notehub.app">student@notehub.app</Link>
-      </p>
-    </div>
-  </div>
-</footer>
-
-  );
-}
-</file>
-
-<file path="components/Header/Header.module.css">
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background-color: #333;
-    color: white;
-}
-
-.header a {
-    text-decoration: none;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.header a:hover {
-    color: #ddd;
-}
-
-.navigation {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 1rem;
-}
-
-.navigation li a {
-    text-decoration: none;
-    color: white;
-    font-size: 1rem;
-}
-
-.navigation li a:hover {
-    color: #ddd;
-}
-</file>
-
-<file path="components/Header/Header.tsx">
-import Link from "next/link"; 
-import css from "./Header.module.css";
-
-export default function Header() {
-  return (
-    <header className={css.header}>
-      {/* Логотип веде на головну */}
-      <Link href="/" aria-label="Home">
-        NoteHub
-      </Link>
-
-      <nav aria-label="Main Navigation">
-        <ul className={css.navigation}>
-          <li>
-            <Link href="/">Home</Link>
-          </li>
-          <li>
-            <Link href="/notes">Notes</Link>
-          </li>
-        </ul>
-      </nav>
-    </header>
-  );
-}
-</file>
-
-<file path="components/Home/Home.module.css">
-.main {
-    flex: 1;
-}
-
-.container {
-    width: 90%;
-    max-width: 1280px;
-    margin: 0px auto;
-    padding: 0 16px 16px;
-}
-
-.title {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 60px;
-    text-align: center;
-}
-
-.description {
-    font-size: 18px;
-    color: #444444;
-    line-height: 28px;
-    margin-bottom: 16px;
-}
-</file>
-
-<file path="components/Home/Home.tsx">
-
-</file>
-
-<file path="components/Modal/Modal.module.css">
-.backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(33, 37, 41, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal {
-    background-color: #ffffff;
-    padding: 24px;
-    border-radius: 8px;
-    max-width: 500px;
-    width: 100%;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-</file>
-
-<file path="components/NoteForm/NoteForm.module.css">
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.formGroup {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    font-weight: 500;
-    color: #212529;
-}
-
-.input,
-.textarea,
-.select {
-    margin-top: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    resize: none;
-}
-
-.actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.submitButton {
-    padding: 8px 16px;
-    font-size: 16px;
-    background-color: #0d6efd;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.submitButton:hover {
-    background-color: #0b5ed7;
-}
-
-.submitButton:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-}
-
-.cancelButton {
-    padding: 8px 16px;
-    font-size: 16px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.cancelButton:hover {
-    background-color: #e2e6ea;
-}
-
-.error {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 4px;
-}
-</file>
-
-<file path="components/NoteList/NoteList.module.css">
-.list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-}
-
-.listItem {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 180px;
-}
-
-.title {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    color: #212529;
-}
-
-.content {
-    margin: 0;
-    flex-grow: 1;
-    font-size: 14px;
-    color: #495057;
-    margin-bottom: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.button {
-    align-self: flex-end;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: #fff;
-    background-color: #dc3545;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.button:hover {
-    background-color: #bb2d3b;
-}
-
-.footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: auto;
-}
-
-.tag {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #0d6efd;
-    background-color: #e7f1ff;
-    border: 1px solid #b6d4fe;
-    border-radius: 12px;
-    max-width: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.link {
-    align-self: flex-end;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: #fff;
-    background-color: #0d6efd;
-    /* синій колір */
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: background-color 0.2s ease;
-}
-
-.link:hover {
-    background-color: #0b5ed7;
-}
-</file>
-
-<file path="components/NoteList/NoteList.tsx">
-"use client";
-
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { deleteNote } from '@/lib/api'; 
-import type { Note } from '@/types/note';
-import css from './NoteList.module.css';
-import Link from "next/link";
-
-interface NoteListProps {
-  notes: Note[];
-}
-
-const NoteList = ({ notes }: NoteListProps) => {
-  const queryClient = useQueryClient();
-
-  const { mutate } = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      toast.success('Нотатку видалено');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    },
-    onError: () => {
-      toast.error('Не вдалося видалити нотатку');
-    },
-  });
-
-  if (notes.length === 0) return <p>No notes found.</p>;
-
-  return (
-    <ul className={css.list}>
-      {notes.map((note) => (
-        <li key={note.id} className={css.listItem}>
-          <h2 className={css.title}>{note.title}</h2>
-          <p className={css.content}>{note.content}</p>
-          <div className={css.footer}>
-            <span className={css.tag}>{note.tag}</span>
-            <Link href={`/notes/${note.id}`} className={css.link}>
-              View details
-            </Link>
-            <button 
-              className={css.button} 
-              onClick={() => mutate(note.id)} 
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-export default NoteList;
-</file>
-
-<file path="components/NotePreview/NotePreview.module.css">
-.container {
-    max-width: 800px;
-    margin: 32px auto;
-    padding: 24px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.item {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 8px;
-}
-
-.header h2 {
-    margin: 0;
-    font-size: 28px;
-    color: #333;
-}
-
-.content {
-    font-size: 18px;
-    line-height: 26px;
-    color: #444;
-    white-space: pre-wrap;
-}
-
-.date {
-    font-size: 14px;
-    color: #888;
-    text-align: right;
-}
-
-.tag {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #0d6efd;
-    background-color: #e7f1ff;
-    border: 1px solid #b6d4fe;
-    border-radius: 12px;
-    max-width: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.backBtn {
-    align-self: flex-start;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: #000000;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: underline;
-    display: inline-block;
-    background-color: transparent;
-}
-</file>
-
-<file path="components/NotePreview/NotePreview.tsx">
-import { Note } from "@/types/note";
-import css from "./NotePreview.module.css";
-
-interface NotePreviewProps {
-  note: Note;
-}
-
-export const NotePreview = ({ note }: NotePreviewProps) => {
-  return (
-    <div className={css.container}>
-      <div className={css.item}>
-        <div className={css.header}>
-          <h2>{note.title}</h2>
-          <span className={css.tag}>{note.tag}</span>
-        </div>
-        <div className={css.content}>
-          {note.content}
-        </div>
-        <div className={css.date}>
-          Created: {new Date(note.createdAt).toLocaleDateString()}
-        </div>
-      </div>
-    </div>
-  );
-};
-</file>
-
-<file path="components/NotesPage/NotesPage.module.css">
-.app {
-    width: 90%;
-    max-width: 1280px;
-    margin: 0px auto;
-    padding: 0 16px 16px;
-    flex: 1;
-}
-
-.toolbar {
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.button {
-    padding: 6px 12px;
-    font-size: 16px;
-    color: #fff;
-    background-color: #0d6efd;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.button:hover {
-    background-color: #0b5ed7;
-}
-</file>
-
-<file path="components/NotesPage/NotesPage.tsx">
-
-</file>
-
-<file path="components/Pagination/Pagination.module.css">
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    margin: 16px 0;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.pagination li {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    cursor: pointer;
-    min-width: 36px;
-    height: 36px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.pagination li a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    text-decoration: none;
-    color: #0d6efd;
-    font-size: 14px;
-}
-
-.pagination li:hover {
-    background-color: #e9ecef;
-}
-
-.pagination li.active:hover {
-    background-color: #0d6efd;
-}
-
-.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.active a {
-    color: #fff !important;
-    font-weight: 500;
-}
-</file>
-
-<file path="components/SearchBox/SearchBox.module.css">
-.input {
-    flex: 1;
-    max-width: 240px;
-    padding: 6px 12px;
-    font-size: 16px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-</file>
-
-<file path="components/SearchBox/SearchBox.tsx">
-import css from './SearchBox.module.css';
-
-interface SearchBoxProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-const SearchBox = ({ value, onChange }: SearchBoxProps) => {
-  return (
-    <input
-      className={css.input}
-      type="text"
-      placeholder="Search notes"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  );
-};
-
-export default SearchBox;
-</file>
-
-<file path="components/TanStackProvider/TanStackProvider.tsx">
-"use client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
-
-export default function TanStackProvider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-}
-</file>
-
-<file path="eslint.config.mjs">
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
-};
-
-export default nextConfig;
-</file>
-
-<file path="public/file.svg">
-<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
-</file>
-
-<file path="public/globe.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
-</file>
-
-<file path="public/icon-svg.svg">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="80" height="90" x="10" y="5" rx="8" ry="8" fill="#333" stroke="#ffd700" stroke-width="4"/>
-  <text x="50" y="65" font-family="monospace" font-size="50" fill="#ffd700" text-anchor="middle" font-weight="bold">{ }</text>
-</svg>
-</file>
-
-<file path="public/next.svg">
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
-</file>
-
-<file path="public/vercel.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
-</file>
-
-<file path="public/window.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
-</file>
-
-<file path="README.md">
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-</file>
-
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
-}
-</file>
-
-<file path="app/globals.css">
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  background-color: black;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: black;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  margin: 0;
-  background-color: #f8f9fa;
-}
-
-#modal-root {
-  position: relative;
-  z-index: 9999;
-}
-</file>
-
-<file path="app/notes/[id]/error.tsx">
-"use client";
-
-export default function Error({ error }: { error: Error }) {
-  return (
-    <div>
-      <p>Could not fetch note details. {error.message}</p>
-    </div>
-  );
-}
-</file>
-
-<file path="app/notes/[id]/NoteDetails.module.css">
-.main {
-    flex: 1;
-}
-
-.container {
-    max-width: 800px;
-    margin: 32px auto;
-    padding: 24px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.item {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 8px;
-}
-
-.header h2 {
-    margin: 0;
-    font-size: 28px;
-    color: #333;
-}
-
-.content {
-    font-size: 18px;
-    line-height: 26px;
-    color: #444;
-    white-space: pre-wrap;
-}
-
-.date {
-    font-size: 14px;
-    color: #888;
-    text-align: right;
-}
-
-.tag {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #0d6efd;
-    background-color: #e7f1ff;
-    border: 1px solid #b6d4fe;
-    border-radius: 12px;
-    max-width: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-</file>
-
-<file path="app/notes/@modal/(..)notes/[id]/page.tsx">
-"use client";
-
-import { use } from "react";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api";
-import { Modal } from "@/components/Modal/Modal";
-import { NotePreview } from "@/components/NotePreview/NotePreview";
-
-export default function NotePreviewModal({ params }: { params: Promise<{ id: string }> }) {
-  const router = useRouter();
-
-  
-  const resolvedParams = use(params);
-  const id = resolvedParams.id;
-
-  const { data: note, isLoading, isError } = useQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
-    enabled: !!id,
-  });
-
-  return (
-    <Modal onClose={() => router.back()}>
-      {isLoading && <p>Завантаження...</p>}
-      {isError && <p>Помилка завантаження ID: {id}</p>}
-      {note && <NotePreview note={note} />}
-    </Modal>
-  );
-}
-</file>
-
-<file path="app/notes/error.tsx">
-"use client";
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
-  return (
-    <div>
-      <p>Could not fetch the data. {error.message}</p>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
-</file>
-
-<file path="app/notes/layout.tsx">
-export default function NotesLayout({
-  children,
-  modal,
-  sidebar,
-}: {
-  children: React.ReactNode;
-  modal: React.ReactNode;
-  sidebar: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", gap: "24px", padding: "20px" }}>
-      <aside style={{ width: "220px", flexShrink: 0 }}>
-        {sidebar}
-      </aside>
-      <main style={{ flex: 1 }}>
-        {children}
-      </main>
-      {modal}
-    </div>
-  );
-}
-</file>
-
-<file path="app/notes/Notes.module.css">
-.container {
-    width: 90%;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 16px 16px;
-}
-
-.controls {
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.addButton {
-    padding: 6px 12px;
-    font-size: 16px;
-    color: #fff;
-    background-color: #0d6efd;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.addButton:hover {
-    background-color: #0b5ed7;
-}
-</file>
-
-<file path="app/notes/page.tsx">
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import NotesClient from "./Notes.client";
-
-export default async function NotesPage() {
-  const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", undefined],
-    queryFn: () => fetchNotes(1, "", 12, undefined),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient />
-    </HydrationBoundary>
-  );
-}
-</file>
-
-<file path="app/page.tsx">
-import css from "./page.module.css";
-
-export default function HomePage() {
-  return (
-    <main>
-      <div className={css.container}>
-        <h1 className={css.title}>Welcome to NoteHub</h1>
-        <p className={css.description}>
-          NoteHub is a simple and efficient application designed for managing personal notes...
-        </p>
-        <p className={css.description}>
-          The app provides a clean interface for writing, editing, and browsing notes...
-        </p>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="components/Pagination/Pagination.tsx">
-"use client";
-
-import ReactPaginate from "react-paginate";
-import css from './Pagination.module.css';
-
-interface PaginationProps {
-  pageCount: number;
-  currentPage: number;
-  onPageChange: (selectedItem: { selected: number }) => void;
-}
-
-export const Pagination = ({ pageCount, currentPage, onPageChange }: PaginationProps) => {
-  return (
-    <ReactPaginate
-      forcePage={currentPage - 1}
-      pageCount={pageCount}
-      onPageChange={onPageChange}
-      previousLabel="<"
-      nextLabel=">"
-      breakLabel="..."
-      marginPagesDisplayed={2}
-      pageRangeDisplayed={5}
-      containerClassName={css.pagination}
-      activeClassName={css.active}
-      pageClassName={css.pageItem}
-      previousClassName={css.pageItem}
-      nextClassName={css.pageItem}
-      breakClassName={css.pageItem}
-      pageLinkClassName={css.pageLink}
-      previousLinkClassName={css.pageLink}
-      nextLinkClassName={css.pageLink}
-      breakLinkClassName={css.pageLink}
-    />
-  );
-};
-
-export default Pagination;
-</file>
-
-<file path="app/notes/[id]/NoteDetails.client.tsx">
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api";
-import css from "./NoteDetails.module.css";
-
-export default function NoteDetailsClient({ id }: { id: string }) {
-  const { data: note, isLoading, error } = useQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
-    refetchOnMount: false,
-    enabled: !!id,
-  });
-
-  if (isLoading) return <p>Loading, please wait...</p>;
-if (error || !note) return <p>Something went wrong.</p>;
-
-  return (
-    <div className={css.container}>
-      <div className={css.item}>
-        <h2>{note.title}</h2>
-        <span className={css.tag}>{note.tag}</span>
-        <p>{note.content}</p>
-        <p className={css.date}>{new Date(note.createdAt).toLocaleDateString()}</p>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="package.json">
-{
-  "name": "06-notehub-nextjs",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.96.2",
-    "axios": "^1.14.0",
-    "formik": "^2.4.9",
-    "next": "16.2.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hot-toast": "^2.6.0",
-    "react-paginate": "^8.3.0",
-    "use-debounce": "^10.1.1",
-    "yup": "^1.7.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/react-paginate": "^7.1.4",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.2",
-    "typescript": "^5"
-  }
-}
-</file>
-
-<file path="app/layout.tsx">
-export default function NotesLayout({
-  children,
-  modal,
-  sidebar,
-}: {
-  children: React.ReactNode;
-  modal: React.ReactNode;
-  sidebar: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", gap: "24px", padding: "20px" }}>
-      <aside style={{ width: "220px", flexShrink: 0 }}>
-        {sidebar}
-      </aside>
-      <main style={{ flex: 1 }}>
-        {children}
-      </main>
-      {modal}
-    </div>
-  );
-}
-</file>
-
-<file path="components/Modal/Modal.tsx">
-"use client";
-
-import { useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import css from './Modal.module.css';
-
-interface ModalProps {
-  children: React.ReactNode;
-  onClose: () => void;
-}
-
-export const Modal = ({ children, onClose }: ModalProps) => {
-
-  useEffect(() => {
-    let root = document.getElementById('modal-root');
-
-    if (!root) {
-      root = document.createElement('div');
-      root.setAttribute('id', 'modal-root');
-      document.body.appendChild(root);
-    }
-
-    document.body.style.overflow = 'hidden';
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = 'unset';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onClose]);
-
-  // 🔥 головна фішка — перевірка на client
-  if (typeof window === 'undefined') return null;
-
-  const modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) return null;
-
-  return createPortal(
-    <div
-      className={css.backdrop}
-      onClick={(e) => {
-        if (e.currentTarget === e.target) onClose();
-      }}
-    >
-      <div className={css.modal}>{children}</div>
-    </div>,
-    modalRoot
-  );
-};
-</file>
-
-<file path="lib/api.ts">
-import axios from "axios";
-import { FetchNotesResponse, Note } from "@/types/note";
-
-const getApi = () => {
-  return axios.create({
-    baseURL: "https://notehub-public.goit.study/api",
-    headers: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-    },
-  });
-};
-
-export const fetchNotes = async (
-  page: number = 1,
-  search: string = "",
-  perPage: number = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const response = await getApi().get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      perPage,
-      search,
-      ...(tag && tag !== "all" ? { tag } : {}),
-    },
-  });
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const response = await getApi().get<Note>(`/notes/${id}`);
-  return response.data;
-};
-
-export const createNote = async (
-  note: Omit<Note, "id" | "createdAt" | "updatedAt">
-): Promise<Note> => {
-  const response = await getApi().post<Note>("/notes", note);
-  return response.data;
-};
-
-export const deleteNote = async (id: string): Promise<void> => {
-  await getApi().delete(`/notes/${id}`);
-};
-</file>
-
-<file path="types/note.ts">
-export type NoteTag = 'Todo' | 'Work' | 'Personal' | 'Meeting' | 'Shopping';
-
-export interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tag: NoteTag;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface FetchNotesResponse {
-  notes: Note[];
-  totalPages: number;
-}
-</file>
-
-<file path="app/notes/[id]/page.tsx">
-import NoteDetailsClient from "./NoteDetails.client";
-
-export default async function NotePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-
-  return <NoteDetailsClient id={id} />;
-}
-</file>
-
-<file path="app/notes/Notes.client.tsx">
-"use client";
-
-import { useState, use } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import { Modal } from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
-import css from "./Notes.module.css";
-
-interface NotesClientProps {
-  params?: Promise<{ slug?: string[] }>;
-}
-
-export default function NotesClient({ params }: NotesClientProps) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const resolvedParams = params ? use(params) : null;
-  const tagFromUrl = resolvedParams?.slug?.[0];
-  const activeTag = tagFromUrl === "all" ? undefined : tagFromUrl;
-
-  const [debouncedSearch] = useDebounce(search, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, activeTag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, activeTag),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        <SearchBox value={search} onChange={setSearch} />
-        <button className={css.addButton} onClick={() => setIsModalOpen(true)}>
-          Add New Note
-        </button>
-      </div>
-
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
-        <>
-          <NoteList notes={data?.notes ?? []} />
-          <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
-          />
-        </>
-      )}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onCancel={() => setIsModalOpen(false)}
-            onSuccess={() => setIsModalOpen(false)}
-          />
-        </Modal>
-      )}
-    </section>
-  );
-}
-</file>
-
-<file path="components/NoteForm/NoteForm.tsx">
-"use client";
-
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote } from "@/lib/api";
-import { NoteTag } from "@/types/note";
-import css from "./NoteForm.module.css";
-
-interface NoteFormProps {
-  onCancel: () => void;
-  onSuccess: () => void;
-}
-
-interface FormValues {
-  title: string;
-  content: string;
-  tag: NoteTag;
-}
-
-const validationSchema = Yup.object({
-  title: Yup.string().required("Title is required").min(3, "Too short"),
-  content: Yup.string().max(500, "Too long"),
-  tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
-    .required("Tag is required"),
-});
-
-const NoteForm = ({ onCancel, onSuccess }: NoteFormProps) => {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      onSuccess();
-    },
-  });
-
-  const initialValues: FormValues = {
-    title: "",
-    content: "",
-    tag: "Personal",
-  };
-
-  return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={(values) => mutation.mutate(values)}
-    >
-      {({ isSubmitting }) => (
-        <Form className={css.form}>
-          <div className={css.formGroup}>
-            <label htmlFor="title">Title</label>
-            <Field name="title" id="title" type="text" className={css.input} />
-            <ErrorMessage name="title" component="div" className={css.error} />
-          </div>
-
-          <div className={css.formGroup}>
-            <label htmlFor="content">Content</label>
-            <Field name="content" id="content" as="textarea" className={css.textarea} />
-            <ErrorMessage name="content" component="div" className={css.error} />
-          </div>
-
-          <div className={css.formGroup}>
-            <label htmlFor="tag">Tag</label>
-            <Field name="tag" id="tag" as="select" className={css.select}>
-              <option value="Todo">Todo</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Shopping">Shopping</option>
-            </Field>
-            <ErrorMessage name="tag" component="div" className={css.error} />
-          </div>
-
-          <div className={css.actions}>
-            <button type="button" onClick={onCancel} className={css.cancelButton}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className={css.submitButton}
-            >
-              {mutation.isPending ? "Saving..." : "Save Note"}
-            </button>
-          </div>
-        </Form>
-      )}
-    </Formik>
-  );
-};
-
-export default NoteForm;
-</file>
-
-</files>
-````
-
 ## File: app/notes/[id]/error.tsx
 ````typescript
 "use client";
@@ -3616,84 +1715,6 @@ export default function NoteDetailsError({
     </div>
   );
 }
-````
-
-## File: app/notes/filter/[...slug]/Notes.client.tsx
-````typescript
-"use client";
-
-import { useState } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import NoteForm from "@/components/NoteForm/NoteForm";
-import { Modal } from "@/components/Modal/Modal";
-import css from "@/app/notes/Notes.module.css";
-
-type Props = {
-  tag?: string;
-};
-
-export default function FilterNotesClient({ tag }: Props) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [debouncedSearch] = useDebounce(search, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, tag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        
-<SearchBox
-  value={search}
-  onChange={(value) => {
-    setSearch(value);
-    setPage(1);
-  }}
-/>
-
-        <button
-          className={css.addButton}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add New Note
-        </button>
-      </div>
-
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
-        <>
-          <NoteList notes={data?.notes ?? []} />
-          <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
-          />
-        </>
-      )}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onCancel={() => setIsModalOpen(false)}
-            onSuccess={() => setIsModalOpen(false)}
-          />
-        </Modal>
-      )}
-    </section>
-  );
-}
-``
 ````
 
 ## File: components/Modal/Modal.tsx
@@ -3773,36 +1794,64 @@ export interface FetchNotesResponse {
 }
 ````
 
-## File: app/notes/filter/[...slug]/page.tsx
+## File: app/notes/filter/[...slug]/Notes.client.tsx
 ````typescript
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 import { fetchNotes } from "@/lib/api";
-import NotesClient from "./Notes.client";
+import NoteList from "@/components/NoteList/NoteList";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import css from "@/app/notes/Notes.module.css";
 
-type Params = Promise<{
-  slug?: string[];
-}>;
+type Props = {
+  tag?: string;
+};
 
-export default async function FilteredNotesPage({
-  params,
-}: {
-  params: Params;
-}) {
-  const resolvedParams = await params;
-  const tag = resolvedParams.slug?.[0];
-  const activeTag = tag === "all" ? undefined : tag;
+export default function FilterNotesClient({ tag }: Props) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [debouncedSearch] = useDebounce(search, 500);
 
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", activeTag],
-    queryFn: () => fetchNotes(1, "", 12, activeTag),
+  const { data, isLoading } = useQuery({
+    queryKey: ["notes", page, debouncedSearch, tag],
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
+    placeholderData: keepPreviousData,
   });
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient tag={activeTag} />
-    </HydrationBoundary>
+    <section className={css.container}>
+      <div className={css.controls}>
+        <SearchBox
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+
+        <Link href="/notes/action/create" className={css.addButton}>
+          Add New Note
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <p>Loading notes...</p>
+      ) : (
+        <>
+          <NoteList notes={data?.notes ?? []} />
+          <Pagination
+            currentPage={page}
+            pageCount={data?.totalPages ?? 1}
+            onPageChange={(e) => setPage(e.selected + 1)}
+          />
+        </>
+      )}
+    </section>
   );
 }
 ````
@@ -3834,140 +1883,165 @@ export default function NotesLayout({ children, modal, sidebar }: Props) {
 }
 ````
 
+## File: app/notes/filter/[...slug]/page.tsx
+````typescript
+import type { Metadata } from "next";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { fetchNotes } from "@/lib/api";
+import FilterNotesClient from "./Notes.client";
+
+type Params = {
+  params: {
+    slug?: string[];
+  };
+};
+
+export async function generateMetadata(
+  { params }: Params
+): Promise<Metadata> {
+  const tag = params.slug?.[0] ?? "all";
+
+  return {
+    title: `Notes (${tag}) | NoteHub`,
+    description: `Notes filtered by tag: ${tag}`,
+    openGraph: {
+      title: `Notes (${tag}) | NoteHub`,
+      description: `Notes filtered by tag: ${tag}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Notes filter",
+        },
+      ],
+    },
+  };
+}
+
+export default async function FilteredNotesPage({ params }: Params) {
+  const queryClient = new QueryClient();
+  const tag = params.slug?.[0];
+
+  await queryClient.prefetchQuery({
+    queryKey: ["notes", 1, "", tag],
+    queryFn: () => fetchNotes(1, "", 12, tag),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <FilterNotesClient tag={tag} />
+    </HydrationBoundary>
+  );
+}
+````
+
 ## File: components/NoteForm/NoteForm.tsx
 ````typescript
 "use client";
 
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
+import { FormEvent, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote } from "@/lib/api";
-import { NoteTag } from "@/types/note";
+import { useNoteStore } from "@/lib/store/noteStore";
 import css from "./NoteForm.module.css";
 
-interface NoteFormProps {
-  onCancel: () => void;
-  onSuccess: () => void;
-}
-
-interface FormValues {
-  title: string;
-  content: string;
-  tag: NoteTag;
-}
-
-const validationSchema = Yup.object({
-  title: Yup.string().required("Title is required").min(3, "Too short"),
-  content: Yup.string().max(500, "Too long"),
-  tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
-    .required("Tag is required"),
-});
-
-const NoteForm = ({ onCancel, onSuccess }: NoteFormProps) => {
+export default function NoteForm() {
+  const router = useRouter();
   const queryClient = useQueryClient();
+
+  const { draft, setDraft, clearDraft } = useNoteStore();
 
   const mutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      onSuccess();
+      clearDraft();
+      router.back();
     },
   });
 
-  const initialValues: FormValues = {
-    title: "",
-    content: "",
-    tag: "Personal",
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setDraft({
+      ...draft,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    mutation.mutate(draft);
   };
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={(values) => mutation.mutate(values)}
-    >
-      {({ isSubmitting }) => (
-        <Form className={css.form}>
-          <div className={css.formGroup}>
-            <label htmlFor="title">Title</label>
-            <Field name="title" id="title" type="text" className={css.input} />
-            <ErrorMessage name="title" component="div" className={css.error} />
-          </div>
+    <form className={css.form} onSubmit={handleSubmit}>
+      <div className={css.formGroup}>
+        <label htmlFor="title">Title</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          className={css.input}
+          value={draft.title}
+          onChange={handleChange}
+          required
+          minLength={3}
+        />
+      </div>
 
-          <div className={css.formGroup}>
-            <label htmlFor="content">Content</label>
-            <Field name="content" id="content" as="textarea" className={css.textarea} />
-            <ErrorMessage name="content" component="div" className={css.error} />
-          </div>
+      <div className={css.formGroup}>
+        <label htmlFor="content">Content</label>
+        <textarea
+          id="content"
+          name="content"
+          className={css.textarea}
+          value={draft.content}
+          onChange={handleChange}
+          maxLength={500}
+        />
+      </div>
 
-          <div className={css.formGroup}>
-            <label htmlFor="tag">Tag</label>
-            <Field name="tag" id="tag" as="select" className={css.select}>
-              <option value="Todo">Todo</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Shopping">Shopping</option>
-            </Field>
-            <ErrorMessage name="tag" component="div" className={css.error} />
-          </div>
+      <div className={css.formGroup}>
+        <label htmlFor="tag">Tag</label>
+        <select
+          id="tag"
+          name="tag"
+          className={css.select}
+          value={draft.tag}
+          onChange={handleChange}
+        >
+          <option value="Todo">Todo</option>
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+      </div>
 
-          <div className={css.actions}>
-            <button type="button" onClick={onCancel} className={css.cancelButton}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className={css.submitButton}
-            >
-              {mutation.isPending ? "Saving..." : "Save Note"}
-            </button>
-          </div>
-        </Form>
-      )}
-    </Formik>
+      <div className={css.actions}>
+        <button
+          type="button"
+          className={css.cancelButton}
+          onClick={() => router.back()}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          className={css.submitButton}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? "Saving..." : "Save Note"}
+        </button>
+      </div>
+    </form>
   );
-};
-
-export default NoteForm;
-````
-
-## File: package.json
-````json
-{
-  "name": "08-zustand",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.96.2",
-    "axios": "^1.14.0",
-    "formik": "^2.4.9",
-    "next": "16.2.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hot-toast": "^2.6.0",
-    "react-paginate": "^8.3.0",
-    "use-debounce": "^10.1.1",
-    "yup": "^1.7.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/react-paginate": "^7.1.4",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.2",
-    "typescript": "^5"
-  }
 }
 ````
 
@@ -4020,6 +2094,44 @@ export const deleteNote = async (id: string): Promise<Note> => {
 };
 ````
 
+## File: package.json
+````json
+{
+  "name": "08-zustand",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.96.2",
+    "axios": "^1.14.0",
+    "formik": "^2.4.9",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
+    "react-paginate": "^8.3.0",
+    "use-debounce": "^10.1.1",
+    "yup": "^1.7.1",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-paginate": "^7.1.4",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "typescript": "^5"
+  }
+}
+````
+
 ## File: app/notes/[id]/NoteDetails.client.tsx
 ````typescript
 "use client";
@@ -4041,24 +2153,49 @@ export default function NoteDetailsClient({ id }: Props) {
 
 ## File: app/layout.tsx
 ````typescript
+import type { Metadata } from "next";
+import { Roboto } from "next/font/google";
+import "./globals.css";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
-import "./globals.css";
 
-type Props = {
-  children: React.ReactNode;
-  modal?: React.ReactNode;
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+  variable: "--font-roboto",
+});
+
+export const metadata: Metadata = {
+  title: "NoteHub",
+  description: "NoteHub — application for creating and managing notes",
+  openGraph: {
+    title: "NoteHub",
+    description: "Simple and convenient note management application",
+    url: "https://notehub.vercel.app",
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "NoteHub",
+      },
+    ],
+  },
 };
 
-export default function RootLayout({ children, modal }: Props) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
+    <html lang="en" className={roboto.variable}>
       <body>
         <TanStackProvider>
           <Header />
           {children}
-          {modal}
           <Footer />
         </TanStackProvider>
       </body>
@@ -4069,27 +2206,41 @@ export default function RootLayout({ children, modal }: Props) {
 
 ## File: app/notes/[id]/page.tsx
 ````typescript
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import type { Metadata } from "next";
 import { fetchNoteById } from "@/lib/api";
-import NotePreviewClient from "@/app/@modal/(.)notes/[id]/NotePreview.client";
+import NoteDetailsClient from "./NoteDetails.client";
 
-type Params = Promise<{ id: string }>;
+type Props = {
+  params: {
+    id: string;
+  };
+};
 
-export default async function NotePage({ params }: { params: Params }) {
-  const { id } = await params;
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
+  const note = await fetchNoteById(params.id);
 
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotePreviewClient id={id} />
-    </HydrationBoundary>
-  );
+  return {
+    title: `${note.title} | NoteHub`,
+    description: note.content.slice(0, 100),
+    openGraph: {
+      title: note.title,
+      description: note.content.slice(0, 100),
+      url: `https://notehub.vercel.app/notes/${note.id}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: note.title,
+        },
+      ],
+    },
+  };
 }
-``
+
+export default function NotePage({ params }: Props) {
+  return <NoteDetailsClient id={params.id} />;
+}
 ````

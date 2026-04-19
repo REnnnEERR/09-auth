@@ -3,16 +3,11 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 import { fetchNotes } from "@/lib/api";
 import FilterNotesClient from "./Notes.client";
 
-type Params = {
-  params: {
-    slug?: string[];
-  };
-};
-
 export async function generateMetadata(
-  { params }: Params
+  params: Promise<{ slug?: string[] }>
 ): Promise<Metadata> {
-  const tag = params.slug?.[0] ?? "all";
+  const { slug } = await params;
+  const tag = slug?.[0] ?? "all";
 
   return {
     title: `Notes (${tag}) | NoteHub`,
@@ -33,9 +28,17 @@ export async function generateMetadata(
   };
 }
 
-export default async function FilteredNotesPage({ params }: Params) {
+type PageProps = {
+  params: Promise<{
+    slug?: string[];
+  }>;
+};
+
+export default async function FilteredNotesPage({ params }: PageProps) {
+  const { slug } = await params;
+  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
+
   const queryClient = new QueryClient();
-  const tag = params.slug?.[0];
 
   await queryClient.prefetchQuery({
     queryKey: ["notes", 1, "", tag],
