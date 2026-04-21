@@ -1,47 +1,29 @@
-import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
 import "./globals.css";
+import type { Metadata } from "next";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-  variable: "--font-roboto",
-});
+import AuthProvider from "@/components/AuthProvider/AuthProvider";
 
 export const metadata: Metadata = {
   title: "NoteHub",
-  description: "NoteHub — application for creating and managing notes",
-  openGraph: {
-    title: "NoteHub",
-    description: "Simple and convenient note management application",
-    url: "https://notehub.vercel.app",
-    images: [
-      {
-        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-        width: 1200,
-        height: 630,
-        alt: "NoteHub",
-      },
-    ],
-  },
+  description: "NoteHub application",
 };
 
-export default function RootLayout({
-  children,
-}: {
+type Props = {
   children: React.ReactNode;
-}) {
+};
+
+export default function RootLayout({ children }: Props) {
   return (
-    <html lang="en" className={roboto.variable}>
+    <html lang="en">
       <body>
         <TanStackProvider>
-          <Header />
-          {children}
-          <Footer />
+          <AuthProvider>
+            <Header />
+            {children}
+            <Footer />
+          </AuthProvider>
         </TanStackProvider>
       </body>
     </html>

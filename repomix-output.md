@@ -35,9 +35,27 @@ The content is organized as follows:
 # Directory Structure
 ```
 .gitignore
+app/(auth routes)/sign-in/page.tsx
+app/(auth routes)/sign-in/SignIn.module.css
+app/(auth routes)/sign-up/page.tsx
+app/(auth routes)/sign-up/SignUp.module.css
+app/(private routes)/profile/edit/EditProfilePage.module.css
+app/(private routes)/profile/edit/page.tsx
+app/(private routes)/profile/page.tsx
+app/(private routes)/profile/ProfilePage.module.css
 app/@modal/(.)notes/[id]/NotePreview.client.tsx
 app/@modal/(.)notes/[id]/page.tsx
 app/@modal/default.tsx
+app/api/_utils/utils.ts
+app/api/api.ts
+app/api/auth/login/route.ts
+app/api/auth/logout/route.ts
+app/api/auth/register/route.ts
+app/api/auth/session/route.ts
+app/api/notes/[id]/route.ts
+app/api/notes/route.ts
+app/api/users/me/route.ts
+app/api/users/route.ts
 app/globals.css
 app/layout.tsx
 app/loading.tsx
@@ -60,6 +78,8 @@ app/notes/Notes.module.css
 app/NotFound.module.css
 app/page.module.css
 app/page.tsx
+components/AuthNavigation/AuthNavigation.module.css
+components/AuthNavigation/AuthNavigation.tsx
 components/Footer/Footer.module.css
 components/Footer/Footer.tsx
 components/Header/Header.module.css
@@ -85,10 +105,15 @@ components/SidebarNotes/SidebarNotes.tsx
 components/TanStackProvider/TanStackProvider.tsx
 eslint.config.mjs
 lib/api.ts
+lib/api/api.ts
+lib/api/clientApi.ts
+lib/api/serverApi.ts
+lib/store/authStore.ts
 lib/store/noteStore.ts
 next.config.ts
 package.json
 project.txt
+proxy.ts
 public/file.svg
 public/globe.svg
 public/icon-svg.svg
@@ -98,9 +123,1484 @@ public/window.svg
 README.md
 tsconfig.json
 types/note.ts
+types/user.ts
 ```
 
 # Files
+
+## File: app/(auth routes)/sign-in/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { login } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./SignIn.module.css";
+
+export default function SignInPage() {
+  const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const [error, setError] = useState<string>("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const user = await login({ email, password });
+      setUser(user);
+      router.push("/profile");
+    } catch {
+      setError("Invalid email or password.");
+    }
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <form className={css.form} onSubmit={handleSubmit}>
+        <h1 className={css.formTitle}>Sign in</h1>
+
+        <div className={css.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.formGroup}>
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.actions}>
+          <button type="submit" className={css.submitButton}>
+            Log in
+          </button>
+        </div>
+
+        {error && <p className={css.error}>{error}</p>}
+      </form>
+    </main>
+  );
+}
+````
+
+## File: app/(auth routes)/sign-in/SignIn.module.css
+````css
+.mainContent {
+    flex: 1;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 24px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.formTitle {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #212529;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+}
+
+.input {
+    margin-top: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.submitButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+    background-color: #0b5ed7;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: center;
+}
+````
+
+## File: app/(auth routes)/sign-up/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { register } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./SignUp.module.css";
+
+export default function SignUpPage() {
+  const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const [error, setError] = useState<string>("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const user = await register({ email, password });
+      setUser(user);
+      router.push("/profile");
+    } catch {
+      setError("Registration failed. Please try again.");
+    }
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <h1 className={css.formTitle}>Sign up</h1>
+
+      <form className={css.form} onSubmit={handleSubmit}>
+        <div className={css.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.formGroup}>
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.actions}>
+          <button type="submit" className={css.submitButton}>
+            Register
+          </button>
+        </div>
+
+        {error && <p className={css.error}>{error}</p>}
+      </form>
+    </main>
+  );
+}
+````
+
+## File: app/(auth routes)/sign-up/SignUp.module.css
+````css
+.mainContent {
+    flex: 1;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 24px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.formTitle {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #212529;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+}
+
+.input {
+    margin-top: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.submitButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+    background-color: #0d6efd;
+}
+
+.submitButton:disabled {
+    background-color: #b1c7ae;
+    cursor: not-allowed;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: center;
+}
+````
+
+## File: app/(private routes)/profile/edit/EditProfilePage.module.css
+````css
+/* page.module.css */
+
+.mainContent {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px;
+}
+
+.profileCard {
+    max-width: 500px;
+    width: 100%;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    text-align: left;
+}
+
+.formTitle {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 24px auto;
+}
+
+.profileInfo {
+    font-size: 18px;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.usernameWrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.usernameWrapper label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222;
+}
+
+.input {
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    outline-offset: 2px;
+    transition: border-color 0.2s ease;
+}
+
+.input:focus {
+    border-color: #0d6efd;
+    outline: none;
+}
+
+.profileInfo p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.saveButton {
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: stretch;
+    text-align: center;
+}
+
+.saveButton:hover {
+    background-color: #0b5ed7;
+}
+
+.cancelButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: transparent;
+    color: #6c757d;
+    border: 2px solid #6c757d;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.cancelButton:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+````
+
+## File: app/(private routes)/profile/edit/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getMe, updateMe } from "@/lib/api/clientApi";
+import css from "./EditProfilePage.module.css";
+
+export default function EditProfilePage() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getMe();
+
+      // user гарантовано існує, бо маршрут приватний
+      setUsername(user.username);
+      setEmail(user.email);
+      setAvatar(user.avatar);
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await updateMe({ username });
+    router.push("/profile");
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <div className={css.profileCard}>
+        <h1 className={css.formTitle}>Edit Profile</h1>
+
+        <Image
+          src={avatar}
+          alt="User Avatar"
+          width={120}
+          height={120}
+          className={css.avatar}
+        />
+
+        <form className={css.profileInfo} onSubmit={handleSubmit}>
+          <div className={css.usernameWrapper}>
+            <label htmlFor="username">Username:</label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className={css.input}
+              required
+            />
+          </div>
+````
+
+## File: app/(private routes)/profile/page.tsx
+````typescript
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { getMe } from "@/lib/api/serverApi";
+import css from "./ProfilePage.module.css";
+
+export const metadata: Metadata = {
+  title: "Profile | NoteHub",
+  description: "User profile page",
+};
+
+export default async function ProfilePage() {
+  const user = await getMe();
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <main className={css.mainContent}>
+      <div className={css.profileCard}>
+        <div className={css.header}>
+          <h1 className={css.formTitle}>Profile Page</h1>
+
+          <Link href="/profile/edit" className={css.editProfileButton}>
+            Edit Profile
+          </Link>
+        </div>
+
+        <div className={css.avatarWrapper}>
+          <Image
+            src={user.avatar}
+            alt="User Avatar"
+            width={120}
+            height={120}
+            className={css.avatar}
+          />
+        </div>
+
+        <div className={css.profileInfo}>
+          <p>Username: {user.username}</p>
+          <p>Email: {user.email}</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+````
+
+## File: app/(private routes)/profile/ProfilePage.module.css
+````css
+.mainContent {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px;
+}
+
+.profileCard {
+    max-width: 500px;
+    width: 100%;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    text-align: left;
+}
+
+.formTitle {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.avatarWrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profileInfo {
+    font-size: 18px;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.usernameWrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.editProfileButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.editProfileButton:hover {
+    background-color: #0b5ed7;
+}
+````
+
+## File: app/api/_utils/utils.ts
+````typescript
+export function logErrorResponse(errorObj: unknown): void {
+  const green = '\x1b[32m';
+  const yellow = '\x1b[33m';
+  const reset = '\x1b[0m';
+
+  // Стрелка зелёная, текст жёлтый
+  console.log(`${green}> ${yellow}Error Response Data:${reset}`);
+  console.dir(errorObj, { depth: null, colors: true });
+}
+````
+
+## File: app/api/api.ts
+````typescript
+import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: 'https://notehub-api.goit.study',
+  withCredentials: true,
+});
+````
+
+## File: app/api/auth/login/route.ts
+````typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { api } from '../../api';
+import { cookies } from 'next/headers';
+import { parse } from 'cookie';
+import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../../_utils/utils';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const apiRes = await api.post('auth/login', body);
+
+    const cookieStore = await cookies();
+    const setCookie = apiRes.headers['set-cookie'];
+
+    if (setCookie) {
+      const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+      for (const cookieStr of cookieArray) {
+        const parsed = parse(cookieStr);
+        const options = {
+          expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+          path: parsed.Path,
+          maxAge: Number(parsed['Max-Age']),
+        };
+        if (parsed.accessToken) cookieStore.set('accessToken', parsed.accessToken, options);
+        if (parsed.refreshToken) cookieStore.set('refreshToken', parsed.refreshToken, options);
+      }
+
+      return NextResponse.json(apiRes.data, { status: apiRes.status });
+    }
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/auth/logout/route.ts
+````typescript
+import { NextResponse } from 'next/server';
+import { api } from '../../api';
+import { cookies } from 'next/headers';
+import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../../_utils/utils';
+
+export async function POST() {
+  try {
+    const cookieStore = await cookies();
+
+    const accessToken = cookieStore.get('accessToken')?.value;
+    const refreshToken = cookieStore.get('refreshToken')?.value;
+
+    await api.post('auth/logout', null, {
+      headers: {
+        Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      },
+    });
+
+    cookieStore.delete('accessToken');
+    cookieStore.delete('refreshToken');
+
+    return NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/auth/register/route.ts
+````typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { api } from '../../api';
+import { cookies } from 'next/headers';
+import { parse } from 'cookie';
+import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../../_utils/utils';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    const apiRes = await api.post('auth/register', body);
+
+    const cookieStore = await cookies();
+    const setCookie = apiRes.headers['set-cookie'];
+
+    if (setCookie) {
+      const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+      for (const cookieStr of cookieArray) {
+        const parsed = parse(cookieStr);
+
+        const options = {
+          expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+          path: parsed.Path,
+          maxAge: Number(parsed['Max-Age']),
+        };
+        if (parsed.accessToken) cookieStore.set('accessToken', parsed.accessToken, options);
+        if (parsed.refreshToken) cookieStore.set('refreshToken', parsed.refreshToken, options);
+      }
+      return NextResponse.json(apiRes.data, { status: apiRes.status });
+    }
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/auth/session/route.ts
+````typescript
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { api } from "../../api";
+import { parse } from "cookie";
+import { isAxiosError } from "axios";
+import { logErrorResponse } from "../../_utils/utils";
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("accessToken")?.value;
+    const refreshToken = cookieStore.get("refreshToken")?.value;
+
+    if (accessToken) {
+      return NextResponse.json({ success: true });
+    }
+
+    if (refreshToken) {
+      const apiRes = await api.get("auth/session", {
+        headers: {
+          Cookie: cookieStore.toString(),
+        },
+      });
+
+      const setCookie = apiRes.headers["set-cookie"];
+
+      if (setCookie) {
+        const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+        for (const cookieStr of cookieArray) {
+          const parsed = parse(cookieStr);
+
+          const options = {
+            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+            path: parsed.Path,
+            maxAge: Number(parsed["Max-Age"]),
+          };
+
+          if (parsed.accessToken)
+            cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.refreshToken)
+            cookieStore.set("refreshToken", parsed.refreshToken, options);
+        }
+        return NextResponse.json({ success: true }, { status: 200 });
+      }
+    }
+    return NextResponse.json({ success: false }, { status: 200 });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json({ success: false }, { status: 200 });
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ success: false }, { status: 200 });
+  }
+}
+````
+
+## File: app/api/notes/[id]/route.ts
+````typescript
+import { NextResponse } from 'next/server';
+import { api } from '../../api';
+import { cookies } from 'next/headers';
+import { logErrorResponse } from '../../_utils/utils';
+import { isAxiosError } from 'axios';
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(request: Request, { params }: Props) {
+  try {
+    const cookieStore = await cookies();
+    const { id } = await params;
+    const res = await api(`/notes/${id}`, {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, { params }: Props) {
+  try {
+    const cookieStore = await cookies();
+    const { id } = await params;
+
+    const res = await api.delete(`/notes/${id}`, {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, { params }: Props) {
+  try {
+    const cookieStore = await cookies();
+    const { id } = await params;
+    const body = await request.json();
+
+    const res = await api.patch(`/notes/${id}`, body, {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/notes/route.ts
+````typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { api } from '../api';
+import { cookies } from 'next/headers';
+import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../_utils/utils';
+
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const search = request.nextUrl.searchParams.get('search') ?? '';
+    const page = Number(request.nextUrl.searchParams.get('page') ?? 1);
+    const rawTag = request.nextUrl.searchParams.get('tag') ?? '';
+    const tag = rawTag === 'All' ? '' : rawTag;
+
+    const res = await api('/notes', {
+      params: {
+        ...(search !== '' && { search }),
+        page,
+        perPage: 12,
+        ...(tag && { tag }),
+      },
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+
+    const body = await request.json();
+
+    const res = await api.post('/notes', body, {
+      headers: {
+        Cookie: cookieStore.toString(),
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/users/me/route.ts
+````typescript
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from 'next/server';
+import { api } from '../../api';
+import { cookies } from 'next/headers';
+import { logErrorResponse } from '../../_utils/utils';
+import { isAxiosError } from 'axios';
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+
+    const res = await api.get('/users/me', {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const body = await request.json();
+
+    const res = await api.patch('/users/me', body, {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: app/api/users/route.ts
+````typescript
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from 'next/server';
+import { api } from '../api';
+import { cookies } from 'next/headers';
+import { logErrorResponse } from '../_utils/utils';
+import { isAxiosError } from 'axios';
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+
+    const res = await api.get('/users/me', {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const body = await request.json();
+
+    const res = await api.patch('/users/me', body, {
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
+    });
+    return NextResponse.json(res.data, { status: res.status });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
+      );
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+````
+
+## File: components/AuthNavigation/AuthNavigation.module.css
+````css
+.userEmail {
+    color: white;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.logoutButton {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logoutButton:hover {
+    background-color: white;
+    color: #333;
+}
+
+.navigationItem {
+    display: flex;
+    align-items: center;
+}
+
+.navigationLink {
+    text-decoration: none;
+    color: white;
+    font-size: 1rem;
+}
+
+.navigationLink:hover {
+    color: #ddd;
+}
+````
+
+## File: components/AuthNavigation/AuthNavigation.tsx
+````typescript
+"use client";
+
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./AuthNavigation.module.css";
+
+export default function AuthNavigation() {
+  const router = useRouter();
+  const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      clearIsAuthenticated();
+      router.push("/sign-in");
+    }
+  };
+
+  // ✅ НЕ АВТОРИЗОВАНИЙ
+  if (!isAuthenticated) {
+    return (
+      <>
+        <li className={css.navigationItem}>
+          <a href="/sign-in" className={css.navigationLink}>
+            Login
+          </a>
+        </li>
+
+        <li className={css.navigationItem}>
+          <a href="/sign-up" className={css.navigationLink}>
+            Sign up
+          </a>
+        </li>
+      </>
+    );
+  }
+
+  // ✅ АВТОРИЗОВАНИЙ
+  return (
+    <>
+      <li className={css.navigationItem}>
+        <a href="/profile" className={css.navigationLink}>
+          Profile
+        </a>
+      </li>
+
+      <li className={css.navigationItem}>
+        <p className={css.userEmail}>{user?.email}</p>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={css.logoutButton}
+        >
+          Logout
+        </button>
+      </li>
+    </>
+  );
+}
+``
+````
+
+## File: lib/api/api.ts
+````typescript
+import axios from "axios";
+
+
+const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
+
+export const api = axios.create({
+  baseURL,
+  withCredentials: true, // IMPORTANT: enables cookies
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+````
+
+## File: lib/api/clientApi.ts
+````typescript
+import { api } from "./api";
+import type { Note, FetchNotesResponse } from "@/types/note";
+import type { User } from "@/types/user";
+
+// AUTH
+
+interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export const register = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/register", data);
+  return response.data;
+};
+
+export const login = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/login", data);
+  return response.data;
+};
+
+export const logout = async (): Promise<void> => {
+  await api.post("/auth/logout");
+};
+
+export const checkSession = async (): Promise<User | null> => {
+  const response = await api.get<User | null>("/auth/session");
+  return response.data;
+};
+
+// USER
+
+export const getMe = async (): Promise<User> => {
+  const response = await api.get<User>("/users/me");
+  return response.data;
+};
+
+interface UpdateMePayload {
+  username: string;
+}
+
+export const updateMe = async (
+  data: UpdateMePayload
+): Promise<User> => {
+  const response = await api.patch<User>("/users/me", data);
+  return response.data;
+};
+
+// NOTES
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const response = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+
+  return response.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
+};
+
+interface CreateNotePayload {
+  title: string;
+  content: string;
+  tag: string;
+}
+
+export const createNote = async (
+  data: CreateNotePayload
+): Promise<Note> => {
+  const response = await api.post<Note>("/notes", data);
+  return response.data;
+};
+
+export const deleteNote = async (id: string): Promise<Note> => {
+  const response = await api.delete<Note>(`/notes/${id}`);
+  return response.data;
+};
+````
+
+## File: lib/api/serverApi.ts
+````typescript
+import axios from "axios";
+import { cookies } from "next/headers";
+import type { Note, FetchNotesResponse } from "@/types/note";
+import type { User } from "@/types/user";
+
+/**
+ * Creates axios instance for server-side requests.
+ * Cookies must be awaited and forwarded manually.
+ */
+const createServerApi = async () => {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  return axios.create({
+    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+    headers: {
+      Cookie: cookieHeader,
+      "Content-Type": "application/json",
+    },
+    withCredentials: true,
+  });
+};
+
+/* =========================
+   AUTH / USER
+========================= */
+
+export const checkSession = async (): Promise<User | null> => {
+  try {
+    const api = await createServerApi();
+    const response = await api.get<User | null>("/auth/session");
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+export const getMe = async (): Promise<User | null> => {
+  try {
+    const api = await createServerApi();
+    const response = await api.get<User>("/users/me");
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+/* =========================
+   NOTES
+========================= */
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const api = await createServerApi();
+
+  const response = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+
+  return response.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const api = await createServerApi();
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
+};
+````
+
+## File: lib/store/authStore.ts
+````typescript
+import { create } from "zustand";
+import type { User } from "@/types/user";
+
+type AuthStore = {
+  user: User | null;
+  isAuthenticated: boolean;
+  setUser: (user: User) => void;
+  clearIsAuthenticated: () => void;
+};
+
+export const useAuthStore = create<AuthStore>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: true,
+    }),
+
+  clearIsAuthenticated: () =>
+    set({
+      user: null,
+      isAuthenticated: false,
+    }),
+}));
+``
+````
+
+## File: proxy.ts
+````typescript
+import { NextResponse, type NextRequest } from "next/server";
+
+export default function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  const hasSession = request.cookies.get("connect.sid");
+
+  if (isPrivateRoute && !hasSession) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  if (isAuthRoute && hasSession) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+  ],
+};
+````
+
+## File: types/user.ts
+````typescript
+export interface User {
+  email: string;
+  username: string;
+  avatar: string;
+}
+````
 
 ## File: .gitignore
 ````
@@ -1157,8 +2657,14 @@ export { initialDraft };
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ac.goit.global",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
@@ -1503,23 +3009,28 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
 ## File: components/Header/Header.tsx
 ````typescript
 import Link from "next/link";
+import AuthNavigation from "@/components/AuthNavigation/AuthNavigation";
 import css from "./Header.module.css";
 
 export default function Header() {
   return (
     <header className={css.header}>
-      <Link href="/" aria-label="Home">
+      <Link href="/" className={css.logo}>
         NoteHub
       </Link>
 
-      <nav aria-label="Main Navigation">
+      <nav>
         <ul className={css.navigation}>
-          <li>
+          <li className={css.navigationItem}>
             <Link href="/">Home</Link>
           </li>
-          <li>
-            <Link href="/notes/filter/all">Notes</Link>
+
+          <li className={css.navigationItem}>
+            <Link href="/notes">Notes</Link>
           </li>
+
+          {/* 🔐 AUTH LINKS */}
+          <AuthNavigation />
         </ul>
       </nav>
     </header>
@@ -1633,6 +3144,7 @@ export default function HomePage() {
     </main>
   );
 }
+console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
 ````
 
 ## File: components/Pagination/Pagination.tsx
@@ -1883,60 +3395,6 @@ export default function NotesLayout({ children, modal, sidebar }: Props) {
 }
 ````
 
-## File: app/notes/filter/[...slug]/page.tsx
-````typescript
-import type { Metadata } from "next";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import FilterNotesClient from "./Notes.client";
-
-type Params = {
-  params: {
-    slug?: string[];
-  };
-};
-
-export async function generateMetadata(
-  { params }: Params
-): Promise<Metadata> {
-  const tag = params.slug?.[0] ?? "all";
-
-  return {
-    title: `Notes (${tag}) | NoteHub`,
-    description: `Notes filtered by tag: ${tag}`,
-    openGraph: {
-      title: `Notes (${tag}) | NoteHub`,
-      description: `Notes filtered by tag: ${tag}`,
-      url: `https://notehub.vercel.app/notes/filter/${tag}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          width: 1200,
-          height: 630,
-          alt: "Notes filter",
-        },
-      ],
-    },
-  };
-}
-
-export default async function FilteredNotesPage({ params }: Params) {
-  const queryClient = new QueryClient();
-  const tag = params.slug?.[0];
-
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", tag],
-    queryFn: () => fetchNotes(1, "", 12, tag),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <FilterNotesClient tag={tag} />
-    </HydrationBoundary>
-  );
-}
-````
-
 ## File: components/NoteForm/NoteForm.tsx
 ````typescript
 "use client";
@@ -2097,7 +3555,7 @@ export const deleteNote = async (id: string): Promise<Note> => {
 ## File: package.json
 ````json
 {
-  "name": "08-zustand",
+  "name": "09-auth",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -2109,6 +3567,7 @@ export const deleteNote = async (id: string): Promise<Note> => {
   "dependencies": {
     "@tanstack/react-query": "^5.96.2",
     "axios": "^1.14.0",
+    "cookie": "^1.1.1",
     "formik": "^2.4.9",
     "next": "16.2.2",
     "react": "19.2.4",
@@ -2148,6 +3607,63 @@ type Props = {
 
 export default function NoteDetailsClient({ id }: Props) {
   return <NotePreviewClient id={id} />;
+}
+````
+
+## File: app/notes/filter/[...slug]/page.tsx
+````typescript
+import type { Metadata } from "next";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { fetchNotes } from "@/lib/api";
+import FilterNotesClient from "./Notes.client";
+
+export async function generateMetadata(
+  params: Promise<{ slug?: string[] }>
+): Promise<Metadata> {
+  const { slug } = await params;
+  const tag = slug?.[0] ?? "all";
+
+  return {
+    title: `Notes (${tag}) | NoteHub`,
+    description: `Notes filtered by tag: ${tag}`,
+    openGraph: {
+      title: `Notes (${tag}) | NoteHub`,
+      description: `Notes filtered by tag: ${tag}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Notes filter",
+        },
+      ],
+    },
+  };
+}
+
+type PageProps = {
+  params: Promise<{
+    slug?: string[];
+  }>;
+};
+
+export default async function FilteredNotesPage({ params }: PageProps) {
+  const { slug } = await params;
+  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
+
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: ["notes", 1, "", tag],
+    queryFn: () => fetchNotes(1, "", 12, tag),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <FilterNotesClient tag={tag} />
+    </HydrationBoundary>
+  );
 }
 ````
 
@@ -2210,16 +3726,18 @@ import type { Metadata } from "next";
 import { fetchNoteById } from "@/lib/api";
 import NoteDetailsClient from "./NoteDetails.client";
 
-type Props = {
-  params: {
+type PageProps = {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function generateMetadata(
-  { params }: Props
+  params: Promise<{ id: string }>
 ): Promise<Metadata> {
-  const note = await fetchNoteById(params.id);
+  const { id } = await params;
+
+  const note = await fetchNoteById(id);
 
   return {
     title: `${note.title} | NoteHub`,
@@ -2240,7 +3758,8 @@ export async function generateMetadata(
   };
 }
 
-export default function NotePage({ params }: Props) {
-  return <NoteDetailsClient id={params.id} />;
+export default async function NotePage({ params }: PageProps) {
+  const { id } = await params;
+  return <NoteDetailsClient id={id} />;
 }
 ````
