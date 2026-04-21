@@ -16,8 +16,6 @@ export default function EditProfilePage() {
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getMe();
-
-      // user гарантовано існує, бо маршрут приватний
       setUsername(user.username);
       setEmail(user.email);
       setAvatar(user.avatar);
@@ -58,3 +56,22 @@ export default function EditProfilePage() {
             />
           </div>
 
+          <p>Email: {email}</p>
+
+          <div className={css.actions}>
+            <button type="submit" className={css.saveButton}>
+              Save
+            </button>
+            <button
+              type="button"
+              className={css.cancelButton}
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}
