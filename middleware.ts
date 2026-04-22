@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isPrivateRoute =
@@ -11,8 +11,8 @@ export default function proxy(request: NextRequest) {
 
   // ✅ перевіряємо КОНКРЕТНУ cookie сесії
   const hasSession =
-    request.cookies.get("notehub.sid") ||
-    request.cookies.get("connect.sid");
+    request.cookies.get("accessToken") ||
+    request.cookies.get("refreshToken");
 
   if (isPrivateRoute && !hasSession) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
@@ -33,4 +33,3 @@ export const config = {
     "/sign-up",
   ],
 };
-``

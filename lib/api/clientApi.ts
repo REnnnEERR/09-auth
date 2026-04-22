@@ -28,8 +28,19 @@ export const logout = async (): Promise<void> => {
 };
 
 export const checkSession = async (): Promise<User | null> => {
-  const response = await api.get<User | null>("/auth/session");
-  return response.data;
+  try {
+    const response = await api.get<{ success: boolean }>("/auth/session");
+    
+    if (!response.data.success) {
+      return null;
+    }
+    
+    
+    const userResponse = await getMe();
+    return userResponse;
+  } catch {
+    return null;
+  }
 };
 
 // USER

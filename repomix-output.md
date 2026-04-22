@@ -35,6 +35,7 @@ The content is organized as follows:
 # Directory Structure
 ```
 .gitignore
+app/(auth routes)/layout.tsx
 app/(auth routes)/sign-in/page.tsx
 app/(auth routes)/sign-in/SignIn.module.css
 app/(auth routes)/sign-up/page.tsx
@@ -114,10 +115,10 @@ lib/api/clientApi.ts
 lib/api/serverApi.ts
 lib/store/authStore.ts
 lib/store/noteStore.ts
+middleware.ts
 next.config.ts
 package.json
 project.txt
-proxy.ts
 public/file.svg
 public/globe.svg
 public/icon-svg.svg
@@ -131,6 +132,398 @@ types/user.ts
 ```
 
 # Files
+
+## File: app/(auth routes)/layout.tsx
+````typescript
+import React from "react";
+
+type Props = {
+  children: React.ReactNode;
+};
+
+export default function AuthLayout({ children }: Props) {
+  return <>{children}</>;
+}
+````
+
+## File: middleware.ts
+````typescript
+import { NextResponse, type NextRequest } from "next/server";
+
+export default function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
+  const hasSession =
+    request.cookies.get("accessToken") ||
+    request.cookies.get("refreshToken");
+
+  if (isPrivateRoute && !hasSession) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  if (isAuthRoute && hasSession) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+  ],
+};
+````
+
+## File: .gitignore
+````
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+````
+
+## File: app/(auth routes)/sign-in/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { login } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./SignIn.module.css";
+
+export default function SignInPage() {
+  const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const [error, setError] = useState<string>("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const user = await login({ email, password });
+      setUser(user);
+      router.push("/profile");
+    } catch {
+      setError("Invalid email or password.");
+    }
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <form className={css.form} onSubmit={handleSubmit}>
+        <h1 className={css.formTitle}>Sign in</h1>
+
+        <div className={css.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.formGroup}>
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.actions}>
+          <button type="submit" className={css.submitButton}>
+            Log in
+          </button>
+        </div>
+
+        {error && <p className={css.error}>{error}</p>}
+      </form>
+    </main>
+  );
+}
+````
+
+## File: app/(auth routes)/sign-in/SignIn.module.css
+````css
+.mainContent {
+    flex: 1;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 24px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.formTitle {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #212529;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+}
+
+.input {
+    margin-top: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.submitButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+    background-color: #0b5ed7;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: center;
+}
+````
+
+## File: app/(auth routes)/sign-up/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { register } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./SignUp.module.css";
+
+export default function SignUpPage() {
+  const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const [error, setError] = useState<string>("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const user = await register({ email, password });
+      setUser(user);
+      router.push("/profile");
+    } catch {
+      setError("Registration failed. Please try again.");
+    }
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <h1 className={css.formTitle}>Sign up</h1>
+
+      <form className={css.form} onSubmit={handleSubmit}>
+        <div className={css.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.formGroup}>
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            className={css.input}
+            required
+          />
+        </div>
+
+        <div className={css.actions}>
+          <button type="submit" className={css.submitButton}>
+            Register
+          </button>
+        </div>
+
+        {error && <p className={css.error}>{error}</p>}
+      </form>
+    </main>
+  );
+}
+````
+
+## File: app/(auth routes)/sign-up/SignUp.module.css
+````css
+.mainContent {
+    flex: 1;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 24px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.formTitle {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #212529;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+}
+
+.input {
+    margin-top: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.submitButton {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+    background-color: #0d6efd;
+}
+
+.submitButton:disabled {
+    background-color: #b1c7ae;
+    cursor: not-allowed;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: center;
+}
+````
 
 ## File: app/(private routes)/notes/[id]/error.tsx
 ````typescript
@@ -571,346 +964,6 @@ export default function NotesLayout({ children, modal, sidebar }: Props) {
 ## File: app/(private routes)/notes/page.tsx
 ````typescript
 export { default } from "./default";
-````
-
-## File: .gitignore
-````
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-````
-
-## File: app/(auth routes)/sign-in/page.tsx
-````typescript
-"use client";
-
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { login } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
-import css from "./SignIn.module.css";
-
-export default function SignInPage() {
-  const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
-
-  const [error, setError] = useState<string>("");
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    try {
-      const user = await login({ email, password });
-      setUser(user);
-      router.push("/profile");
-    } catch {
-      setError("Invalid email or password.");
-    }
-  };
-
-  return (
-    <main className={css.mainContent}>
-      <form className={css.form} onSubmit={handleSubmit}>
-        <h1 className={css.formTitle}>Sign in</h1>
-
-        <div className={css.formGroup}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            className={css.input}
-            required
-          />
-        </div>
-
-        <div className={css.formGroup}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            className={css.input}
-            required
-          />
-        </div>
-
-        <div className={css.actions}>
-          <button type="submit" className={css.submitButton}>
-            Log in
-          </button>
-        </div>
-
-        {error && <p className={css.error}>{error}</p>}
-      </form>
-    </main>
-  );
-}
-````
-
-## File: app/(auth routes)/sign-in/SignIn.module.css
-````css
-.mainContent {
-    flex: 1;
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 400px;
-    margin: 40px auto;
-    padding: 24px;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.formTitle {
-    font-size: 24px;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 8px;
-    color: #212529;
-}
-
-.formGroup {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    font-weight: 500;
-    color: #212529;
-}
-
-.input {
-    margin-top: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-
-.actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.submitButton {
-    padding: 8px 16px;
-    font-size: 16px;
-    background-color: #0d6efd;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.submitButton:hover {
-    background-color: #0b5ed7;
-}
-
-.error {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 4px;
-    text-align: center;
-}
-````
-
-## File: app/(auth routes)/sign-up/page.tsx
-````typescript
-"use client";
-
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { register } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
-import css from "./SignUp.module.css";
-
-export default function SignUpPage() {
-  const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
-
-  const [error, setError] = useState<string>("");
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    try {
-      const user = await register({ email, password });
-      setUser(user);
-      router.push("/profile");
-    } catch {
-      setError("Registration failed. Please try again.");
-    }
-  };
-
-  return (
-    <main className={css.mainContent}>
-      <h1 className={css.formTitle}>Sign up</h1>
-
-      <form className={css.form} onSubmit={handleSubmit}>
-        <div className={css.formGroup}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            className={css.input}
-            required
-          />
-        </div>
-
-        <div className={css.formGroup}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            className={css.input}
-            required
-          />
-        </div>
-
-        <div className={css.actions}>
-          <button type="submit" className={css.submitButton}>
-            Register
-          </button>
-        </div>
-
-        {error && <p className={css.error}>{error}</p>}
-      </form>
-    </main>
-  );
-}
-````
-
-## File: app/(auth routes)/sign-up/SignUp.module.css
-````css
-.mainContent {
-    flex: 1;
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 400px;
-    margin: 40px auto;
-    padding: 24px;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.formTitle {
-    font-size: 24px;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 8px;
-    color: #212529;
-}
-
-.formGroup {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    font-weight: 500;
-    color: #212529;
-}
-
-.input {
-    margin-top: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-
-.actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.submitButton {
-    padding: 8px 16px;
-    font-size: 16px;
-    background-color: #0d6efd;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.submitButton:hover {
-    background-color: #0d6efd;
-}
-
-.submitButton:disabled {
-    background-color: #b1c7ae;
-    cursor: not-allowed;
-}
-
-.error {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 4px;
-    text-align: center;
-}
 ````
 
 ## File: app/(private routes)/profile/edit/EditProfilePage.module.css
@@ -2734,8 +2787,19 @@ export const logout = async (): Promise<void> => {
 };
 
 export const checkSession = async (): Promise<User | null> => {
-  const response = await api.get<User | null>("/auth/session");
-  return response.data;
+  try {
+    const response = await api.get<{ success: boolean }>("/auth/session");
+    
+    if (!response.data.success) {
+      return null;
+    }
+    
+    
+    const userResponse = await getMe();
+    return userResponse;
+  } catch {
+    return null;
+  }
 };
 
 // USER
@@ -2952,46 +3016,6 @@ export const useNoteStore = create<NoteStore>()(
 );
 
 export { initialDraft };
-````
-
-## File: proxy.ts
-````typescript
-import { NextResponse, type NextRequest } from "next/server";
-
-export default function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
-
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
-  const hasSession =
-    request.cookies.get("notehub.sid") ||
-    request.cookies.get("connect.sid");
-
-  if (isPrivateRoute && !hasSession) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  if (isAuthRoute && hasSession) {
-    return NextResponse.redirect(new URL("/profile", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/notes/:path*",
-    "/sign-in",
-    "/sign-up",
-  ],
-};
-``
 ````
 
 ## File: public/file.svg
@@ -3821,9 +3845,10 @@ export const metadata: Metadata = {
 
 type Props = {
   children: React.ReactNode;
+  modal?: React.ReactNode;
 };
 
-export default function RootLayout({ children }: Props) {
+export default function RootLayout({ children, modal }: Props) {
   return (
     <html lang="en">
       <body>
@@ -3831,6 +3856,7 @@ export default function RootLayout({ children }: Props) {
           <AuthProvider>
             <Header />
             {children}
+            {modal}
             <Footer />
           </AuthProvider>
         </TanStackProvider>
