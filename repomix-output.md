@@ -115,10 +115,10 @@ lib/api/clientApi.ts
 lib/api/serverApi.ts
 lib/store/authStore.ts
 lib/store/noteStore.ts
-middleware.ts
 next.config.ts
 package.json
 project.txt
+proxy.ts
 public/file.svg
 public/globe.svg
 public/icon-svg.svg
@@ -132,58 +132,6 @@ types/user.ts
 ```
 
 # Files
-
-## File: app/(auth routes)/layout.tsx
-````typescript
-import React from "react";
-
-type Props = {
-  children: React.ReactNode;
-};
-
-export default function AuthLayout({ children }: Props) {
-  return <>{children}</>;
-}
-````
-
-## File: middleware.ts
-````typescript
-import { NextResponse, type NextRequest } from "next/server";
-
-export default function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
-
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
-  const hasSession =
-    request.cookies.get("accessToken") ||
-    request.cookies.get("refreshToken");
-
-  if (isPrivateRoute && !hasSession) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  if (isAuthRoute && hasSession) {
-    return NextResponse.redirect(new URL("/profile", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/notes/:path*",
-    "/sign-in",
-    "/sign-up",
-  ],
-};
-````
 
 ## File: .gitignore
 ````
@@ -228,6 +176,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+````
+
+## File: app/(auth routes)/layout.tsx
+````typescript
+import React from "react";
+
+type Props = {
+  children: React.ReactNode;
+};
+
+export default function AuthLayout({ children }: Props) {
+  return <>{children}</>;
+}
 ````
 
 ## File: app/(auth routes)/sign-in/page.tsx
@@ -707,68 +668,6 @@ export default function FilterNotesError({
   );
 }
 ``
-````
-
-## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
-````typescript
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import css from "@/app/notes/Notes.module.css";
-
-type Props = {
-  tag?: string;
-};
-
-export default function FilterNotesClient({ tag }: Props) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [debouncedSearch] = useDebounce(search, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, tag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        <SearchBox
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-        />
-
-        <Link href="/notes/action/create" className={css.addButton}>
-          Add New Note
-        </Link>
-      </div>
-
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
-        <>
-          <NoteList notes={data?.notes ?? []} />
-          <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
-          />
-        </>
-      )}
-    </section>
-  );
-}
 ````
 
 ## File: app/(private routes)/notes/filter/[...slug]/page.tsx
@@ -2755,115 +2654,6 @@ export const api = axios.create({
 });
 ````
 
-## File: lib/api/clientApi.ts
-````typescript
-import { api } from "./api";
-import type { Note, FetchNotesResponse } from "@/types/note";
-import type { User } from "@/types/user";
-
-// AUTH
-
-interface AuthCredentials {
-  email: string;
-  password: string;
-}
-
-export const register = async (
-  data: AuthCredentials
-): Promise<User> => {
-  const response = await api.post<User>("/auth/register", data);
-  return response.data;
-};
-
-export const login = async (
-  data: AuthCredentials
-): Promise<User> => {
-  const response = await api.post<User>("/auth/login", data);
-  return response.data;
-};
-
-export const logout = async (): Promise<void> => {
-  await api.post("/auth/logout");
-};
-
-export const checkSession = async (): Promise<User | null> => {
-  try {
-    const response = await api.get<{ success: boolean }>("/auth/session");
-    
-    if (!response.data.success) {
-      return null;
-    }
-    
-    
-    const userResponse = await getMe();
-    return userResponse;
-  } catch {
-    return null;
-  }
-};
-
-// USER
-
-export const getMe = async (): Promise<User> => {
-  const response = await api.get<User>("/users/me");
-  return response.data;
-};
-
-interface UpdateMePayload {
-  username: string;
-}
-
-export const updateMe = async (
-  data: UpdateMePayload
-): Promise<User> => {
-  const response = await api.patch<User>("/users/me", data);
-  return response.data;
-};
-
-// NOTES
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const response = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      search,
-      perPage,
-      ...(tag ? { tag } : {}),
-    },
-  });
-
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
-};
-
-interface CreateNotePayload {
-  title: string;
-  content: string;
-  tag: string;
-}
-
-export const createNote = async (
-  data: CreateNotePayload
-): Promise<Note> => {
-  const response = await api.post<Note>("/notes", data);
-  return response.data;
-};
-
-export const deleteNote = async (id: string): Promise<Note> => {
-  const response = await api.delete<Note>(`/notes/${id}`);
-  return response.data;
-};
-````
-
 ## File: lib/api/serverApi.ts
 ````typescript
 import axios from "axios";
@@ -3138,6 +2928,68 @@ export interface User {
 }
 ````
 
+## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+````typescript
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
+import { fetchNotes } from "@/lib/api";
+import NoteList from "@/components/NoteList/NoteList";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import css from "@/app/(private routes)/notes/Notes.module.css";
+
+type Props = {
+  tag?: string;
+};
+
+export default function FilterNotesClient({ tag }: Props) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [debouncedSearch] = useDebounce(search, 500);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["notes", page, debouncedSearch, tag],
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
+    placeholderData: keepPreviousData,
+  });
+
+  return (
+    <section className={css.container}>
+      <div className={css.controls}>
+        <SearchBox
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+
+        <Link href="/notes/action/create" className={css.addButton}>
+          Add New Note
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <p>Loading notes...</p>
+      ) : (
+        <>
+          <NoteList notes={data?.notes ?? []} />
+          <Pagination
+            currentPage={page}
+            pageCount={data?.totalPages ?? 1}
+            onPageChange={(e) => setPage(e.selected + 1)}
+          />
+        </>
+      )}
+    </section>
+  );
+}
+````
+
 ## File: app/(private routes)/profile/edit/page.tsx
 ````typescript
 "use client";
@@ -3399,6 +3251,115 @@ export default function NotqesPage() {
 }
 ````
 
+## File: lib/api/clientApi.ts
+````typescript
+import { api } from "./api";
+import type { Note, FetchNotesResponse } from "@/types/note";
+import type { User } from "@/types/user";
+
+// AUTH
+
+interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export const register = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/register", data);
+  return response.data;
+};
+
+export const login = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/login", data);
+  return response.data;
+};
+
+export const logout = async (): Promise<void> => {
+  await api.post("/auth/logout");
+};
+
+export const checkSession = async (): Promise<User | null> => {
+  try {
+    const response = await api.get<{ success: boolean }>("/auth/session");
+    
+    if (!response.data.success) {
+      return null;
+    }
+    
+    
+    const userResponse = await getMe();
+    return userResponse;
+  } catch {
+    return null;
+  }
+};
+
+// USER
+
+export const getMe = async (): Promise<User> => {
+  const response = await api.get<User>("/users/me");
+  return response.data;
+};
+
+interface UpdateMePayload {
+  username: string;
+}
+
+export const updateMe = async (
+  data: UpdateMePayload
+): Promise<User> => {
+  const response = await api.patch<User>("/users/me", data);
+  return response.data;
+};
+
+// NOTES
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const response = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+
+  return response.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
+};
+
+interface CreateNotePayload {
+  title: string;
+  content: string;
+  tag: string;
+}
+
+export const createNote = async (
+  data: CreateNotePayload
+): Promise<Note> => {
+  const response = await api.post<Note>("/notes", data);
+  return response.data;
+};
+
+export const deleteNote = async (id: string): Promise<Note> => {
+  const response = await api.delete<Note>(`/notes/${id}`);
+  return response.data;
+};
+````
+
 ## File: next.config.ts
 ````typescript
 import type { NextConfig } from "next";
@@ -3415,6 +3376,45 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+````
+
+## File: proxy.ts
+````typescript
+import { NextResponse, type NextRequest } from "next/server";
+
+export default function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
+  const hasSession =
+    request.cookies.get("accessToken") ||
+    request.cookies.get("refreshToken");
+
+  if (isPrivateRoute && !hasSession) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  if (isAuthRoute && hasSession) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+  ],
+};
 ````
 
 ## File: app/@modal/(.)notes/[id]/NotePreview.client.tsx
