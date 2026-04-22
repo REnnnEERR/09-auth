@@ -39,6 +39,24 @@ app/(auth routes)/sign-in/page.tsx
 app/(auth routes)/sign-in/SignIn.module.css
 app/(auth routes)/sign-up/page.tsx
 app/(auth routes)/sign-up/SignUp.module.css
+app/(private routes)/notes/[id]/error.tsx
+app/(private routes)/notes/[id]/NoteDetails.client.tsx
+app/(private routes)/notes/[id]/page.tsx
+app/(private routes)/notes/action/create/CreateNote.module.css
+app/(private routes)/notes/action/create/page.tsx
+app/(private routes)/notes/default.tsx
+app/(private routes)/notes/error.tsx
+app/(private routes)/notes/filter/[...slug]/error.tsx
+app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+app/(private routes)/notes/filter/[...slug]/page.tsx
+app/(private routes)/notes/filter/@sidebar/default.tsx
+app/(private routes)/notes/filter/@sidebar/page.tsx
+app/(private routes)/notes/filter/@sidebar/SidebarNotes.module.css
+app/(private routes)/notes/filter/layout.tsx
+app/(private routes)/notes/filter/page.tsx
+app/(private routes)/notes/layout.tsx
+app/(private routes)/notes/Notes.module.css
+app/(private routes)/notes/page.tsx
 app/(private routes)/profile/edit/EditProfilePage.module.css
 app/(private routes)/profile/edit/page.tsx
 app/(private routes)/profile/page.tsx
@@ -60,26 +78,12 @@ app/globals.css
 app/layout.tsx
 app/loading.tsx
 app/not-found.tsx
-app/notes/[id]/error.tsx
-app/notes/[id]/NoteDetails.client.tsx
-app/notes/[id]/page.tsx
-app/notes/action/create/CreateNote.module.css
-app/notes/action/create/page.tsx
-app/notes/default.tsx
-app/notes/error.tsx
-app/notes/filter/[...slug]/error.tsx
-app/notes/filter/[...slug]/Notes.client.tsx
-app/notes/filter/[...slug]/page.tsx
-app/notes/filter/@sidebar/default.tsx
-app/notes/filter/@sidebar/SidebarNotes.module.css
-app/notes/filter/layout.tsx
-app/notes/layout.tsx
-app/notes/Notes.module.css
 app/NotFound.module.css
 app/page.module.css
 app/page.tsx
 components/AuthNavigation/AuthNavigation.module.css
 components/AuthNavigation/AuthNavigation.tsx
+components/AuthProvider/AuthProvider.tsx
 components/Footer/Footer.module.css
 components/Footer/Footer.tsx
 components/Header/Header.module.css
@@ -127,6 +131,492 @@ types/user.ts
 ```
 
 # Files
+
+## File: app/(private routes)/notes/[id]/error.tsx
+````typescript
+"use client";
+
+export default function NoteDetailsError({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <p>Failed to load note details.</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+````
+
+## File: app/(private routes)/notes/[id]/NoteDetails.client.tsx
+````typescript
+"use client";
+
+import NotePreviewClient from "@/app/@modal/(.)notes/[id]/NotePreview.client";
+
+/**
+ * Thin wrapper for HW-07 autochecker.
+ * Reuses actual note preview implementation.
+ */
+type Props = {
+  id: string;
+};
+
+export default function NoteDetailsClient({ id }: Props) {
+  return <NotePreviewClient id={id} />;
+}
+````
+
+## File: app/(private routes)/notes/[id]/page.tsx
+````typescript
+import type { Metadata } from "next";
+import { fetchNoteById } from "@/lib/api";
+import NoteDetailsClient from "./NoteDetails.client";
+
+type PageProps = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
+export async function generateMetadata(
+  params: Promise<{ id: string }>
+): Promise<Metadata> {
+  const { id } = await params;
+
+  const note = await fetchNoteById(id);
+
+  return {
+    title: `${note.title} | NoteHub`,
+    description: note.content.slice(0, 100),
+    openGraph: {
+      title: note.title,
+      description: note.content.slice(0, 100),
+      url: `https://notehub.vercel.app/notes/${note.id}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: note.title,
+        },
+      ],
+    },
+  };
+}
+
+export default async function NotePage({ params }: PageProps) {
+  const { id } = await params;
+  return <NoteDetailsClient id={id} />;
+}
+````
+
+## File: app/(private routes)/notes/action/create/CreateNote.module.css
+````css
+.main {
+    flex: 1;
+}
+
+.container {
+    width: 90%;
+    max-width: 1280px;
+    margin: 0px auto;
+    padding: 0 16px 16px;
+}
+
+.title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 60px;
+    text-align: center;
+}
+````
+
+## File: app/(private routes)/notes/action/create/page.tsx
+````typescript
+import type { Metadata } from "next";
+import NoteForm from "@/components/NoteForm/NoteForm";
+import css from "./CreateNote.module.css";
+
+export const metadata: Metadata = {
+  title: "Create note | NoteHub",
+  description: "Create a new note in NoteHub",
+  openGraph: {
+    title: "Create note | NoteHub",
+    description: "Create a new note in NoteHub",
+    url: "https://notehub.vercel.app/notes/action/create",
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Create note",
+      },
+    ],
+  },
+};
+
+export default function CreateNotePage() {
+  return (
+    <main className={css.main}>
+      <div className={css.container}>
+        <h1 className={css.title}>Create note</h1>
+        <NoteForm />
+      </div>
+    </main>
+  );
+}
+````
+
+## File: app/(private routes)/notes/default.tsx
+````typescript
+import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
+
+export default function Default() {
+  return <SidebarNotes />;
+}
+````
+
+## File: app/(private routes)/notes/error.tsx
+````typescript
+"use client";
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div>
+      <p>Could not fetch the data. {error.message}</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+````
+
+## File: app/(private routes)/notes/filter/[...slug]/error.tsx
+````typescript
+"use client";
+
+export default function FilterNotesError({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <p>Something went wrong while loading filtered notes.</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+``
+````
+
+## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+````typescript
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
+import { fetchNotes } from "@/lib/api";
+import NoteList from "@/components/NoteList/NoteList";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import css from "@/app/notes/Notes.module.css";
+
+type Props = {
+  tag?: string;
+};
+
+export default function FilterNotesClient({ tag }: Props) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [debouncedSearch] = useDebounce(search, 500);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["notes", page, debouncedSearch, tag],
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
+    placeholderData: keepPreviousData,
+  });
+
+  return (
+    <section className={css.container}>
+      <div className={css.controls}>
+        <SearchBox
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+
+        <Link href="/notes/action/create" className={css.addButton}>
+          Add New Note
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <p>Loading notes...</p>
+      ) : (
+        <>
+          <NoteList notes={data?.notes ?? []} />
+          <Pagination
+            currentPage={page}
+            pageCount={data?.totalPages ?? 1}
+            onPageChange={(e) => setPage(e.selected + 1)}
+          />
+        </>
+      )}
+    </section>
+  );
+}
+````
+
+## File: app/(private routes)/notes/filter/[...slug]/page.tsx
+````typescript
+import type { Metadata } from "next";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { fetchNotes } from "@/lib/api";
+import FilterNotesClient from "./Notes.client";
+
+export async function generateMetadata(
+  params: Promise<{ slug?: string[] }>
+): Promise<Metadata> {
+  const { slug } = await params;
+  const tag = slug?.[0] ?? "all";
+
+  return {
+    title: `Notes (${tag}) | NoteHub`,
+    description: `Notes filtered by tag: ${tag}`,
+    openGraph: {
+      title: `Notes (${tag}) | NoteHub`,
+      description: `Notes filtered by tag: ${tag}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Notes filter",
+        },
+      ],
+    },
+  };
+}
+
+type PageProps = {
+  params: Promise<{
+    slug?: string[];
+  }>;
+};
+
+export default async function FilteredNotesPage({ params }: PageProps) {
+  const { slug } = await params;
+  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
+
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: ["notes", 1, "", tag],
+    queryFn: () => fetchNotes(1, "", 12, tag),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <FilterNotesClient tag={tag} />
+    </HydrationBoundary>
+  );
+}
+````
+
+## File: app/(private routes)/notes/filter/@sidebar/default.tsx
+````typescript
+import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
+
+export default function Default() {
+  return <SidebarNotes />;
+}
+````
+
+## File: app/(private routes)/notes/filter/@sidebar/page.tsx
+````typescript
+export { default } from "./default";
+````
+
+## File: app/(private routes)/notes/filter/@sidebar/SidebarNotes.module.css
+````css
+.menuList {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menuItem {
+    margin-bottom: 16px;
+}
+
+.menuLink {
+    text-decoration: none;
+    color: white;
+    font-size: 16px;
+    display: block;
+    padding: 8px 16px;
+    transition: background-color 0.3s ease;
+}
+
+.menuLink:hover {
+    background-color: #444;
+    color: #ddd;
+}
+
+.menuLink {
+    background-color: #333;
+}
+````
+
+## File: app/(private routes)/notes/filter/layout.tsx
+````typescript
+import React from "react";
+
+type Props = {
+  children: React.ReactNode;
+  sidebar?: React.ReactNode;
+};
+
+export default function FilterLayout(props: Props) {
+  const { children, sidebar } = props;
+
+  return (
+    <div style={{ display: "flex", gap: "20px" }}>
+      {sidebar && <aside style={{ width: "250px" }}>{sidebar}</aside>}
+      <main style={{ flex: 1 }}>{children}</main>
+    </div>
+  );
+}
+````
+
+## File: app/(private routes)/notes/filter/page.tsx
+````typescript
+export { default } from "./[...slug]/page";
+````
+
+## File: app/(private routes)/notes/layout.tsx
+````typescript
+import React from "react";
+
+type Props = {
+  children: React.ReactNode;
+  modal?: React.ReactNode;
+  sidebar?: React.ReactNode;
+};
+
+export default function NotesLayout({ children, modal, sidebar }: Props) {
+  return (
+    <div style={{ display: "flex", gap: "24px", padding: "20px" }}>
+      {sidebar && (
+        <aside style={{ width: "220px", flexShrink: 0 }}>
+          {sidebar}
+        </aside>
+      )}
+
+      <main style={{ flex: 1 }}>{children}</main>
+
+      {modal}
+    </div>
+  );
+}
+````
+
+## File: app/(private routes)/notes/Notes.module.css
+````css
+.container {
+    width: 90%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 16px 16px;
+}
+
+.controls {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.addButton {
+    padding: 6px 12px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #0d6efd;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.addButton:hover {
+    background-color: #0b5ed7;
+}
+````
+
+## File: app/(private routes)/notes/page.tsx
+````typescript
+export { default } from "./default";
+````
+
+## File: .gitignore
+````
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+````
 
 ## File: app/(auth routes)/sign-in/page.tsx
 ````typescript
@@ -541,69 +1031,6 @@ export default function SignUpPage() {
 }
 ````
 
-## File: app/(private routes)/profile/edit/page.tsx
-````typescript
-"use client";
-
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { getMe, updateMe } from "@/lib/api/clientApi";
-import css from "./EditProfilePage.module.css";
-
-export default function EditProfilePage() {
-  const router = useRouter();
-
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState("");
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getMe();
-
-      // user гарантовано існує, бо маршрут приватний
-      setUsername(user.username);
-      setEmail(user.email);
-      setAvatar(user.avatar);
-    };
-
-    fetchUser();
-  }, []);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await updateMe({ username });
-    router.push("/profile");
-  };
-
-  return (
-    <main className={css.mainContent}>
-      <div className={css.profileCard}>
-        <h1 className={css.formTitle}>Edit Profile</h1>
-
-        <Image
-          src={avatar}
-          alt="User Avatar"
-          width={120}
-          height={120}
-          className={css.avatar}
-        />
-
-        <form className={css.profileInfo} onSubmit={handleSubmit}>
-          <div className={css.usernameWrapper}>
-            <label htmlFor="username">Username:</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className={css.input}
-              required
-            />
-          </div>
-````
-
 ## File: app/(private routes)/profile/page.tsx
 ````typescript
 import type { Metadata } from "next";
@@ -731,6 +1158,13 @@ export default async function ProfilePage() {
 
 .editProfileButton:hover {
     background-color: #0b5ed7;
+}
+````
+
+## File: app/@modal/default.tsx
+````typescript
+export default function Default() {
+  return null;
 }
 ````
 
@@ -1223,529 +1657,10 @@ export async function PATCH(request: Request) {
 }
 ````
 
-## File: components/AuthNavigation/AuthNavigation.module.css
-````css
-.userEmail {
-    color: white;
-    margin-right: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.logoutButton {
-    background: transparent;
-    border: 1px solid white;
-    color: white;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.logoutButton:hover {
-    background-color: white;
-    color: #333;
-}
-
-.navigationItem {
-    display: flex;
-    align-items: center;
-}
-
-.navigationLink {
-    text-decoration: none;
-    color: white;
-    font-size: 1rem;
-}
-
-.navigationLink:hover {
-    color: #ddd;
-}
-````
-
-## File: components/AuthNavigation/AuthNavigation.tsx
-````typescript
-"use client";
-
-import { useRouter } from "next/navigation";
-import { logout } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
-import css from "./AuthNavigation.module.css";
-
-export default function AuthNavigation() {
-  const router = useRouter();
-  const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      clearIsAuthenticated();
-      router.push("/sign-in");
-    }
-  };
-
-  // ✅ НЕ АВТОРИЗОВАНИЙ
-  if (!isAuthenticated) {
-    return (
-      <>
-        <li className={css.navigationItem}>
-          <a href="/sign-in" className={css.navigationLink}>
-            Login
-          </a>
-        </li>
-
-        <li className={css.navigationItem}>
-          <a href="/sign-up" className={css.navigationLink}>
-            Sign up
-          </a>
-        </li>
-      </>
-    );
-  }
-
-  // ✅ АВТОРИЗОВАНИЙ
-  return (
-    <>
-      <li className={css.navigationItem}>
-        <a href="/profile" className={css.navigationLink}>
-          Profile
-        </a>
-      </li>
-
-      <li className={css.navigationItem}>
-        <p className={css.userEmail}>{user?.email}</p>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={css.logoutButton}
-        >
-          Logout
-        </button>
-      </li>
-    </>
-  );
-}
-``
-````
-
-## File: lib/api/api.ts
-````typescript
-import axios from "axios";
-
-
-const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
-
-export const api = axios.create({
-  baseURL,
-  withCredentials: true, // IMPORTANT: enables cookies
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-````
-
-## File: lib/api/clientApi.ts
-````typescript
-import { api } from "./api";
-import type { Note, FetchNotesResponse } from "@/types/note";
-import type { User } from "@/types/user";
-
-// AUTH
-
-interface AuthCredentials {
-  email: string;
-  password: string;
-}
-
-export const register = async (
-  data: AuthCredentials
-): Promise<User> => {
-  const response = await api.post<User>("/auth/register", data);
-  return response.data;
-};
-
-export const login = async (
-  data: AuthCredentials
-): Promise<User> => {
-  const response = await api.post<User>("/auth/login", data);
-  return response.data;
-};
-
-export const logout = async (): Promise<void> => {
-  await api.post("/auth/logout");
-};
-
-export const checkSession = async (): Promise<User | null> => {
-  const response = await api.get<User | null>("/auth/session");
-  return response.data;
-};
-
-// USER
-
-export const getMe = async (): Promise<User> => {
-  const response = await api.get<User>("/users/me");
-  return response.data;
-};
-
-interface UpdateMePayload {
-  username: string;
-}
-
-export const updateMe = async (
-  data: UpdateMePayload
-): Promise<User> => {
-  const response = await api.patch<User>("/users/me", data);
-  return response.data;
-};
-
-// NOTES
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const response = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      search,
-      perPage,
-      ...(tag ? { tag } : {}),
-    },
-  });
-
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
-};
-
-interface CreateNotePayload {
-  title: string;
-  content: string;
-  tag: string;
-}
-
-export const createNote = async (
-  data: CreateNotePayload
-): Promise<Note> => {
-  const response = await api.post<Note>("/notes", data);
-  return response.data;
-};
-
-export const deleteNote = async (id: string): Promise<Note> => {
-  const response = await api.delete<Note>(`/notes/${id}`);
-  return response.data;
-};
-````
-
-## File: lib/api/serverApi.ts
-````typescript
-import axios from "axios";
-import { cookies } from "next/headers";
-import type { Note, FetchNotesResponse } from "@/types/note";
-import type { User } from "@/types/user";
-
-/**
- * Creates axios instance for server-side requests.
- * Cookies must be awaited and forwarded manually.
- */
-const createServerApi = async () => {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
-
-  return axios.create({
-    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-    headers: {
-      Cookie: cookieHeader,
-      "Content-Type": "application/json",
-    },
-    withCredentials: true,
-  });
-};
-
-/* =========================
-   AUTH / USER
-========================= */
-
-export const checkSession = async (): Promise<User | null> => {
-  try {
-    const api = await createServerApi();
-    const response = await api.get<User | null>("/auth/session");
-    return response.data;
-  } catch {
-    return null;
-  }
-};
-
-export const getMe = async (): Promise<User | null> => {
-  try {
-    const api = await createServerApi();
-    const response = await api.get<User>("/users/me");
-    return response.data;
-  } catch {
-    return null;
-  }
-};
-
-/* =========================
-   NOTES
-========================= */
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const api = await createServerApi();
-
-  const response = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      search,
-      perPage,
-      ...(tag ? { tag } : {}),
-    },
-  });
-
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const api = await createServerApi();
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
-};
-````
-
-## File: lib/store/authStore.ts
-````typescript
-import { create } from "zustand";
-import type { User } from "@/types/user";
-
-type AuthStore = {
-  user: User | null;
-  isAuthenticated: boolean;
-  setUser: (user: User) => void;
-  clearIsAuthenticated: () => void;
-};
-
-export const useAuthStore = create<AuthStore>()((set) => ({
-  user: null,
-  isAuthenticated: false,
-
-  setUser: (user) =>
-    set({
-      user,
-      isAuthenticated: true,
-    }),
-
-  clearIsAuthenticated: () =>
-    set({
-      user: null,
-      isAuthenticated: false,
-    }),
-}));
-``
-````
-
-## File: proxy.ts
-````typescript
-import { NextResponse, type NextRequest } from "next/server";
-
-export default function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
-
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  const hasSession = request.cookies.get("connect.sid");
-
-  if (isPrivateRoute && !hasSession) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  if (isAuthRoute && hasSession) {
-    return NextResponse.redirect(new URL("/profile", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/notes/:path*",
-    "/sign-in",
-    "/sign-up",
-  ],
-};
-````
-
-## File: types/user.ts
-````typescript
-export interface User {
-  email: string;
-  username: string;
-  avatar: string;
-}
-````
-
-## File: .gitignore
-````
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-````
-
-## File: app/@modal/default.tsx
-````typescript
-export default function Default() {
-  return null;
-}
-````
-
 ## File: app/loading.tsx
 ````typescript
 export default function Loading() {
   return <p>Loading, please wait...</p>;
-}
-````
-
-## File: app/notes/action/create/CreateNote.module.css
-````css
-.main {
-    flex: 1;
-}
-
-.container {
-    width: 90%;
-    max-width: 1280px;
-    margin: 0px auto;
-    padding: 0 16px 16px;
-}
-
-.title {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 60px;
-    text-align: center;
-}
-````
-
-## File: app/notes/action/create/page.tsx
-````typescript
-import type { Metadata } from "next";
-import NoteForm from "@/components/NoteForm/NoteForm";
-import css from "./CreateNote.module.css";
-
-export const metadata: Metadata = {
-  title: "Create note | NoteHub",
-  description: "Create a new note in NoteHub",
-  openGraph: {
-    title: "Create note | NoteHub",
-    description: "Create a new note in NoteHub",
-    url: "https://notehub.vercel.app/notes/action/create",
-    images: [
-      {
-        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Create note",
-      },
-    ],
-  },
-};
-
-export default function CreateNotePage() {
-  return (
-    <main className={css.main}>
-      <div className={css.container}>
-        <h1 className={css.title}>Create note</h1>
-        <NoteForm />
-      </div>
-    </main>
-  );
-}
-````
-
-## File: app/notes/filter/[...slug]/error.tsx
-````typescript
-"use client";
-
-export default function FilterNotesError({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <p>Something went wrong while loading filtered notes.</p>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
-``
-````
-
-## File: app/notes/filter/@sidebar/default.tsx
-````typescript
-import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
-
-export default function Default() {
-  return <SidebarNotes />;
 }
 ````
 
@@ -1940,6 +1855,165 @@ a.secondary {
     --button-secondary-hover: #1a1a1a;
     --button-secondary-border: #1a1a1a;
   }
+}
+````
+
+## File: components/AuthNavigation/AuthNavigation.module.css
+````css
+.userEmail {
+    color: white;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.logoutButton {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logoutButton:hover {
+    background-color: white;
+    color: #333;
+}
+
+.navigationItem {
+    display: flex;
+    align-items: center;
+}
+
+.navigationLink {
+    text-decoration: none;
+    color: white;
+    font-size: 1rem;
+}
+
+.navigationLink:hover {
+    color: #ddd;
+}
+````
+
+## File: components/AuthNavigation/AuthNavigation.tsx
+````typescript
+"use client";
+
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./AuthNavigation.module.css";
+
+export default function AuthNavigation() {
+  const router = useRouter();
+  const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      clearIsAuthenticated();
+      router.push("/sign-in");
+    }
+  };
+
+  // ✅ НЕ АВТОРИЗОВАНИЙ
+  if (!isAuthenticated) {
+    return (
+      <>
+        <li className={css.navigationItem}>
+          <a href="/sign-in" className={css.navigationLink}>
+            Login
+          </a>
+        </li>
+
+        <li className={css.navigationItem}>
+          <a href="/sign-up" className={css.navigationLink}>
+            Sign up
+          </a>
+        </li>
+      </>
+    );
+  }
+
+  // ✅ АВТОРИЗОВАНИЙ
+  return (
+    <>
+      <li className={css.navigationItem}>
+        <a href="/profile" className={css.navigationLink}>
+          Profile
+        </a>
+      </li>
+
+      <li className={css.navigationItem}>
+        <p className={css.userEmail}>{user?.email}</p>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={css.logoutButton}
+        >
+          Logout
+        </button>
+      </li>
+    </>
+  );
+}
+``
+````
+
+## File: components/AuthProvider/AuthProvider.tsx
+````typescript
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { checkSession } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+
+type Props = {
+  children: React.ReactNode;
+};
+
+export default function AuthProvider({ children }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setUser, clearIsAuthenticated } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        const user = await checkSession();
+
+        const isPrivateRoute =
+          pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+        if (!user && isPrivateRoute) {
+          clearIsAuthenticated();
+          router.push("/sign-in");
+        }
+
+        if (user) {
+          setUser(user);
+        }
+      } catch {
+        clearIsAuthenticated();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
+  }, [pathname, setUser, clearIsAuthenticated, router]);
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  return <>{children}</>;
 }
 ````
 
@@ -2612,6 +2686,234 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 ````
 
+## File: lib/api/api.ts
+````typescript
+import axios from "axios";
+
+
+const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
+
+export const api = axios.create({
+  baseURL,
+  withCredentials: true, // IMPORTANT: enables cookies
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+````
+
+## File: lib/api/clientApi.ts
+````typescript
+import { api } from "./api";
+import type { Note, FetchNotesResponse } from "@/types/note";
+import type { User } from "@/types/user";
+
+// AUTH
+
+interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export const register = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/register", data);
+  return response.data;
+};
+
+export const login = async (
+  data: AuthCredentials
+): Promise<User> => {
+  const response = await api.post<User>("/auth/login", data);
+  return response.data;
+};
+
+export const logout = async (): Promise<void> => {
+  await api.post("/auth/logout");
+};
+
+export const checkSession = async (): Promise<User | null> => {
+  const response = await api.get<User | null>("/auth/session");
+  return response.data;
+};
+
+// USER
+
+export const getMe = async (): Promise<User> => {
+  const response = await api.get<User>("/users/me");
+  return response.data;
+};
+
+interface UpdateMePayload {
+  username: string;
+}
+
+export const updateMe = async (
+  data: UpdateMePayload
+): Promise<User> => {
+  const response = await api.patch<User>("/users/me", data);
+  return response.data;
+};
+
+// NOTES
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const response = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+
+  return response.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
+};
+
+interface CreateNotePayload {
+  title: string;
+  content: string;
+  tag: string;
+}
+
+export const createNote = async (
+  data: CreateNotePayload
+): Promise<Note> => {
+  const response = await api.post<Note>("/notes", data);
+  return response.data;
+};
+
+export const deleteNote = async (id: string): Promise<Note> => {
+  const response = await api.delete<Note>(`/notes/${id}`);
+  return response.data;
+};
+````
+
+## File: lib/api/serverApi.ts
+````typescript
+import axios from "axios";
+import { cookies } from "next/headers";
+import type { Note, FetchNotesResponse } from "@/types/note";
+import type { User } from "@/types/user";
+
+/**
+ * Creates axios instance for server-side requests.
+ * Cookies must be awaited and forwarded manually.
+ */
+const createServerApi = async () => {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  return axios.create({
+    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+    headers: {
+      Cookie: cookieHeader,
+      "Content-Type": "application/json",
+    },
+    withCredentials: true,
+  });
+};
+
+/* =========================
+   AUTH / USER
+========================= */
+
+export const checkSession = async (): Promise<User | null> => {
+  try {
+    const api = await createServerApi();
+    const response = await api.get<User | null>("/auth/session");
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+export const getMe = async (): Promise<User | null> => {
+  try {
+    const api = await createServerApi();
+    const response = await api.get<User>("/users/me");
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+/* =========================
+   NOTES
+========================= */
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const api = await createServerApi();
+
+  const response = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+
+  return response.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const api = await createServerApi();
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
+};
+````
+
+## File: lib/store/authStore.ts
+````typescript
+import { create } from "zustand";
+import type { User } from "@/types/user";
+
+type AuthStore = {
+  user: User | null;
+  isAuthenticated: boolean;
+  setUser: (user: User) => void;
+  clearIsAuthenticated: () => void;
+};
+
+export const useAuthStore = create<AuthStore>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: true,
+    }),
+
+  clearIsAuthenticated: () =>
+    set({
+      user: null,
+      isAuthenticated: false,
+    }),
+}));
+``
+````
+
 ## File: lib/store/noteStore.ts
 ````typescript
 import { create } from "zustand";
@@ -2652,22 +2954,44 @@ export const useNoteStore = create<NoteStore>()(
 export { initialDraft };
 ````
 
-## File: next.config.ts
+## File: proxy.ts
 ````typescript
-import type { NextConfig } from "next";
+import { NextResponse, type NextRequest } from "next/server";
 
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "ac.goit.global",
-      },
-    ],
-  },
+export default function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
+  const hasSession =
+    request.cookies.get("notehub.sid") ||
+    request.cookies.get("connect.sid");
+
+  if (isPrivateRoute && !hasSession) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  if (isAuthRoute && hasSession) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+  ],
 };
-
-export default nextConfig;
+``
 ````
 
 ## File: public/file.svg
@@ -2778,6 +3102,96 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
     "**/*.mts"
   ],
   "exclude": ["node_modules"]
+}
+````
+
+## File: types/user.ts
+````typescript
+export interface User {
+  email: string;
+  username: string;
+  avatar: string;
+}
+````
+
+## File: app/(private routes)/profile/edit/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getMe, updateMe } from "@/lib/api/clientApi";
+import css from "./EditProfilePage.module.css";
+
+export default function EditProfilePage() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getMe();
+      setUsername(user.username);
+      setEmail(user.email);
+      setAvatar(user.avatar);
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await updateMe({ username });
+    router.push("/profile");
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <div className={css.profileCard}>
+        <h1 className={css.formTitle}>Edit Profile</h1>
+
+        <Image
+          src={avatar}
+          alt="User Avatar"
+          width={120}
+          height={120}
+          className={css.avatar}
+        />
+
+        <form className={css.profileInfo} onSubmit={handleSubmit}>
+          <div className={css.usernameWrapper}>
+            <label htmlFor="username">Username:</label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className={css.input}
+              required
+            />
+          </div>
+
+          <p>Email: {email}</p>
+
+          <div className={css.actions}>
+            <button type="submit" className={css.saveButton}>
+              Save
+            </button>
+            <button
+              type="button"
+              className={css.cancelButton}
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
 }
 ````
 
@@ -2918,126 +3332,6 @@ export default function NotFound() {
 }
 ````
 
-## File: app/notes/default.tsx
-````typescript
-import SidebarNotes from "@/components/SidebarNotes/SidebarNotes";
-
-export default function Default() {
-  return <SidebarNotes />;
-}
-````
-
-## File: app/notes/error.tsx
-````typescript
-"use client";
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
-  return (
-    <div>
-      <p>Could not fetch the data. {error.message}</p>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
-````
-
-## File: app/notes/filter/@sidebar/SidebarNotes.module.css
-````css
-.menuList {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-}
-
-.menuItem {
-    margin-bottom: 16px;
-}
-
-.menuLink {
-    text-decoration: none;
-    color: white;
-    font-size: 16px;
-    display: block;
-    padding: 8px 16px;
-    transition: background-color 0.3s ease;
-}
-
-.menuLink:hover {
-    background-color: #444;
-    color: #ddd;
-}
-
-.menuLink {
-    background-color: #333;
-}
-````
-
-## File: app/notes/Notes.module.css
-````css
-.container {
-    width: 90%;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 16px 16px;
-}
-
-.controls {
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.addButton {
-    padding: 6px 12px;
-    font-size: 16px;
-    color: #fff;
-    background-color: #0d6efd;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.addButton:hover {
-    background-color: #0b5ed7;
-}
-````
-
-## File: components/Header/Header.tsx
-````typescript
-import Link from "next/link";
-import AuthNavigation from "@/components/AuthNavigation/AuthNavigation";
-import css from "./Header.module.css";
-
-export default function Header() {
-  return (
-    <header className={css.header}>
-      <Link href="/" className={css.logo}>
-        NoteHub
-      </Link>
-
-      <nav>
-        <ul className={css.navigation}>
-          <li className={css.navigationItem}>
-            <Link href="/">Home</Link>
-          </li>
-
-          <li className={css.navigationItem}>
-            <Link href="/notes">Notes</Link>
-          </li>
-
-          {/* 🔐 AUTH LINKS */}
-          <AuthNavigation />
-        </ul>
-      </nav>
-    </header>
-  );
-}
-````
-
 ## File: components/Home/Home.tsx
 ````typescript
 export default function Home() {
@@ -3079,6 +3373,24 @@ export default function NotePreview({ note }: Props) {
 export default function NotqesPage() {
   return null;
 }
+````
+
+## File: next.config.ts
+````typescript
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ac.goit.global",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
 ````
 
 ## File: app/@modal/(.)notes/[id]/NotePreview.client.tsx
@@ -3125,26 +3437,36 @@ export default function NotePreviewClient({ id }: Props) {
 }
 ````
 
-## File: app/page.tsx
+## File: components/Header/Header.tsx
 ````typescript
-import css from "./page.module.css";
+import Link from "next/link";
+import AuthNavigation from "@/components/AuthNavigation/AuthNavigation";
+import css from "./Header.module.css";
 
-export default function HomePage() {
+export default function Header() {
   return (
-    <main>
-      <div className={css.container}>
-        <h1 className={css.title}>Welcome to NoteHub</h1>
-        <p className={css.description}>
-          NoteHub is a simple and efficient application designed for managing personal notes...
-        </p>
-        <p className={css.description}>
-          The app provides a clean interface for writing, editing, and browsing notes...
-        </p>
-      </div>
-    </main>
+    <header className={css.header}>
+      <Link href="/" className={css.logo}>
+        NoteHub
+      </Link>
+
+      <nav>
+        <ul className={css.navigation}>
+          <li className={css.navigationItem}>
+            <Link href="/">Home</Link>
+          </li>
+
+          <li className={css.navigationItem}>
+            <Link href="/notes">Notes</Link>
+          </li>
+
+          {/* 🔐 AUTH LINKS */}
+          <AuthNavigation />
+        </ul>
+      </nav>
+    </header>
   );
 }
-console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
 ````
 
 ## File: components/Pagination/Pagination.tsx
@@ -3188,45 +3510,26 @@ export const Pagination = ({ pageCount, currentPage, onPageChange }: PaginationP
 export default Pagination;
 ````
 
-## File: app/notes/filter/layout.tsx
+## File: app/page.tsx
 ````typescript
-import React from "react";
+import css from "./page.module.css";
 
-type Props = {
-  children: React.ReactNode;
-  sidebar?: React.ReactNode;
-};
-
-export default function FilterLayout(props: Props) {
-  const { children, sidebar } = props;
-
+export default function HomePage() {
   return (
-    <div style={{ display: "flex", gap: "20px" }}>
-      {sidebar && <aside style={{ width: "250px" }}>{sidebar}</aside>}
-      <main style={{ flex: 1 }}>{children}</main>
-    </div>
+    <main>
+      <div className={css.container}>
+        <h1 className={css.title}>Welcome to NoteHub</h1>
+        <p className={css.description}>
+          NoteHub is a simple and efficient application designed for managing personal notes...
+        </p>
+        <p className={css.description}>
+          The app provides a clean interface for writing, editing, and browsing notes...
+        </p>
+      </div>
+    </main>
   );
 }
-````
-
-## File: app/notes/[id]/error.tsx
-````typescript
-"use client";
-
-export default function NoteDetailsError({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <p>Failed to load note details.</p>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
+console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
 ````
 
 ## File: components/Modal/Modal.tsx
@@ -3303,95 +3606,6 @@ export interface Note {
 export interface FetchNotesResponse {
   notes: Note[];
   totalPages: number;
-}
-````
-
-## File: app/notes/filter/[...slug]/Notes.client.tsx
-````typescript
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import css from "@/app/notes/Notes.module.css";
-
-type Props = {
-  tag?: string;
-};
-
-export default function FilterNotesClient({ tag }: Props) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [debouncedSearch] = useDebounce(search, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, tag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        <SearchBox
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-        />
-
-        <Link href="/notes/action/create" className={css.addButton}>
-          Add New Note
-        </Link>
-      </div>
-
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
-        <>
-          <NoteList notes={data?.notes ?? []} />
-          <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
-          />
-        </>
-      )}
-    </section>
-  );
-}
-````
-
-## File: app/notes/layout.tsx
-````typescript
-import React from "react";
-
-type Props = {
-  children: React.ReactNode;
-  modal?: React.ReactNode;
-  sidebar?: React.ReactNode;
-};
-
-export default function NotesLayout({ children, modal, sidebar }: Props) {
-  return (
-    <div style={{ display: "flex", gap: "24px", padding: "20px" }}>
-      {sidebar && (
-        <aside style={{ width: "220px", flexShrink: 0 }}>
-          {sidebar}
-        </aside>
-      )}
-
-      <main style={{ flex: 1 }}>{children}</main>
-
-      {modal}
-    </div>
-  );
 }
 ````
 
@@ -3591,175 +3805,37 @@ export const deleteNote = async (id: string): Promise<Note> => {
 }
 ````
 
-## File: app/notes/[id]/NoteDetails.client.tsx
-````typescript
-"use client";
-
-import NotePreviewClient from "@/app/@modal/(.)notes/[id]/NotePreview.client";
-
-/**
- * Thin wrapper for HW-07 autochecker.
- * Reuses actual note preview implementation.
- */
-type Props = {
-  id: string;
-};
-
-export default function NoteDetailsClient({ id }: Props) {
-  return <NotePreviewClient id={id} />;
-}
-````
-
-## File: app/notes/filter/[...slug]/page.tsx
-````typescript
-import type { Metadata } from "next";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import FilterNotesClient from "./Notes.client";
-
-export async function generateMetadata(
-  params: Promise<{ slug?: string[] }>
-): Promise<Metadata> {
-  const { slug } = await params;
-  const tag = slug?.[0] ?? "all";
-
-  return {
-    title: `Notes (${tag}) | NoteHub`,
-    description: `Notes filtered by tag: ${tag}`,
-    openGraph: {
-      title: `Notes (${tag}) | NoteHub`,
-      description: `Notes filtered by tag: ${tag}`,
-      url: `https://notehub.vercel.app/notes/filter/${tag}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          width: 1200,
-          height: 630,
-          alt: "Notes filter",
-        },
-      ],
-    },
-  };
-}
-
-type PageProps = {
-  params: Promise<{
-    slug?: string[];
-  }>;
-};
-
-export default async function FilteredNotesPage({ params }: PageProps) {
-  const { slug } = await params;
-  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
-
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", tag],
-    queryFn: () => fetchNotes(1, "", 12, tag),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <FilterNotesClient tag={tag} />
-    </HydrationBoundary>
-  );
-}
-````
-
 ## File: app/layout.tsx
 ````typescript
-import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
 import "./globals.css";
+import type { Metadata } from "next";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-  variable: "--font-roboto",
-});
+import AuthProvider from "@/components/AuthProvider/AuthProvider";
 
 export const metadata: Metadata = {
   title: "NoteHub",
-  description: "NoteHub — application for creating and managing notes",
-  openGraph: {
-    title: "NoteHub",
-    description: "Simple and convenient note management application",
-    url: "https://notehub.vercel.app",
-    images: [
-      {
-        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-        width: 1200,
-        height: 630,
-        alt: "NoteHub",
-      },
-    ],
-  },
+  description: "NoteHub application",
 };
 
-export default function RootLayout({
-  children,
-}: {
+type Props = {
   children: React.ReactNode;
-}) {
+};
+
+export default function RootLayout({ children }: Props) {
   return (
-    <html lang="en" className={roboto.variable}>
+    <html lang="en">
       <body>
         <TanStackProvider>
-          <Header />
-          {children}
-          <Footer />
+          <AuthProvider>
+            <Header />
+            {children}
+            <Footer />
+          </AuthProvider>
         </TanStackProvider>
       </body>
     </html>
   );
-}
-````
-
-## File: app/notes/[id]/page.tsx
-````typescript
-import type { Metadata } from "next";
-import { fetchNoteById } from "@/lib/api";
-import NoteDetailsClient from "./NoteDetails.client";
-
-type PageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export async function generateMetadata(
-  params: Promise<{ id: string }>
-): Promise<Metadata> {
-  const { id } = await params;
-
-  const note = await fetchNoteById(id);
-
-  return {
-    title: `${note.title} | NoteHub`,
-    description: note.content.slice(0, 100),
-    openGraph: {
-      title: note.title,
-      description: note.content.slice(0, 100),
-      url: `https://notehub.vercel.app/notes/${note.id}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          width: 1200,
-          height: 630,
-          alt: note.title,
-        },
-      ],
-    },
-  };
-}
-
-export default async function NotePage({ params }: PageProps) {
-  const { id } = await params;
-  return <NoteDetailsClient id={id} />;
 }
 ````
