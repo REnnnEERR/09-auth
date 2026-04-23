@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { fetchNotes } from "@/lib/api/clientApi";
@@ -14,9 +13,9 @@ type Props = {
   tag?: string;
 };
 
-export default function FilterNotesClient({ tag }: Props) {
-  const [search, setSearch] = useState("");
+export default function NotesClient({ tag }: Props) {
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
 
   const { data, isLoading } = useQuery({
@@ -25,34 +24,27 @@ export default function FilterNotesClient({ tag }: Props) {
     placeholderData: keepPreviousData,
   });
 
+  const handlePageChange = (selectedItem: { selected: number }) => {
+    setPage(selectedItem.selected);
+  };
+
   return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        <SearchBox
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-        />
+    <main className={css.mainContent}>
+      <SearchBox value={search} onChange={setSearch} />
 
-        <Link href="/notes/action/create" className={css.addButton}>
-          Add New Note
-        </Link>
-      </div>
+      {isLoading && <p>Loading...</p>}
 
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
+      {data && data.notes.length > 0 && (
         <>
-          <NoteList notes={data?.notes ?? []} />
+          <NoteList notes={data.notes} />
+
           <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
+            pageCount={data.totalPages}
+            currentPage={page}         
+            onPageChange={handlePageChange}
           />
         </>
       )}
-    </section>
+    </main>
   );
 }

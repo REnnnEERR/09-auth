@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -10,53 +11,41 @@ export default function AuthNavigation() {
   const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      clearIsAuthenticated();
-      router.push("/sign-in");
-    }
+    await logout();
+    clearIsAuthenticated();
+    router.push("/sign-in");
   };
 
-  // ✅ НЕ АВТОРИЗОВАНИЙ
   if (!isAuthenticated) {
     return (
       <>
         <li className={css.navigationItem}>
-          <a href="/sign-in" className={css.navigationLink}>
+          <Link href="/sign-in" className={css.navigationLink}>
             Login
-          </a>
+          </Link>
         </li>
-
         <li className={css.navigationItem}>
-          <a href="/sign-up" className={css.navigationLink}>
+          <Link href="/sign-up" className={css.navigationLink}>
             Sign up
-          </a>
+          </Link>
         </li>
       </>
     );
   }
 
-  // ✅ АВТОРИЗОВАНИЙ
   return (
     <>
       <li className={css.navigationItem}>
-        <a href="/profile" className={css.navigationLink}>
+        <Link href="/profile" className={css.navigationLink}>
           Profile
-        </a>
+        </Link>
       </li>
-
       <li className={css.navigationItem}>
         <p className={css.userEmail}>{user?.email}</p>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={css.logoutButton}
-        >
+        <button className={css.logoutButton} onClick={handleLogout}>
           Logout
         </button>
       </li>
     </>
   );
 }
-``

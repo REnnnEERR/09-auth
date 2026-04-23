@@ -1,17 +1,13 @@
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 import { cookies } from "next/headers";
-import type { Note, FetchNotesResponse } from "@/types/note";
 import type { User } from "@/types/user";
+import type { Note, FetchNotesResponse } from "@/types/note";
 
-/**
- * Creates axios instance for server-side requests.
- * Cookies must be awaited and forwarded manually.
- */
 const createServerApi = async () => {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
-    .map((c) => `${c.name}=${c.value}`)
+    .map(c => `${c.name}=${c.value}`)
     .join("; ");
 
   return axios.create({
@@ -24,15 +20,10 @@ const createServerApi = async () => {
   });
 };
 
-/* =========================
-   AUTH / USER
-========================= */
-
-export const checkSession = async (): Promise<User | null> => {
+export const checkSession = async (): Promise<AxiosResponse<User | null> | null> => {
   try {
     const api = await createServerApi();
-    const response = await api.get<User | null>("/auth/session");
-    return response.data;
+    return await api.get<User | null>("/auth/session");
   } catch {
     return null;
   }
@@ -41,16 +32,12 @@ export const checkSession = async (): Promise<User | null> => {
 export const getMe = async (): Promise<User | null> => {
   try {
     const api = await createServerApi();
-    const response = await api.get<User>("/users/me");
-    return response.data;
+    const res = await api.get<User>("/users/me");
+    return res.data;
   } catch {
     return null;
   }
 };
-
-/* =========================
-   NOTES
-========================= */
 
 export const fetchNotes = async (
   page = 1,
@@ -59,8 +46,7 @@ export const fetchNotes = async (
   tag?: string
 ): Promise<FetchNotesResponse> => {
   const api = await createServerApi();
-
-  const response = await api.get<FetchNotesResponse>("/notes", {
+  const res = await api.get<FetchNotesResponse>("/notes", {
     params: {
       page,
       search,
@@ -68,12 +54,11 @@ export const fetchNotes = async (
       ...(tag ? { tag } : {}),
     },
   });
-
-  return response.data;
+  return res.data;
 };
 
 export const fetchNoteById = async (id: string): Promise<Note> => {
   const api = await createServerApi();
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
+  const res = await api.get<Note>(`/notes/${id}`);
+  return res.data;
 };

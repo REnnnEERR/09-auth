@@ -4,10 +4,12 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getMe, updateMe } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
 import css from "./EditProfilePage.module.css";
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const setUser = useAuthStore(state => state.setUser);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -20,13 +22,18 @@ export default function EditProfilePage() {
       setEmail(user.email);
       setAvatar(user.avatar);
     };
-
     fetchUser();
   }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await updateMe({ username });
+
+    // ✅ отримуємо оновленого користувача
+    const updatedUser = await updateMe({ username });
+
+    // ✅ ОБОВʼЯЗКОВО оновлюємо глобальний auth store
+    setUser(updatedUser);
+
     router.push("/profile");
   };
 
@@ -35,13 +42,15 @@ export default function EditProfilePage() {
       <div className={css.profileCard}>
         <h1 className={css.formTitle}>Edit Profile</h1>
 
-        <Image
-          src={avatar}
-          alt="User Avatar"
-          width={120}
-          height={120}
-          className={css.avatar}
-        />
+        {avatar && (
+          <Image
+            src={avatar}
+            alt="User Avatar"
+            width={120}
+            height={120}
+            className={css.avatar}
+          />
+        )}
 
         <form className={css.profileInfo} onSubmit={handleSubmit}>
           <div className={css.usernameWrapper}>
@@ -50,7 +59,7 @@ export default function EditProfilePage() {
               id="username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={e => setUsername(e.target.value)}
               className={css.input}
               required
             />
