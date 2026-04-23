@@ -8,6 +8,7 @@ import NoteList from "@/components/NoteList/NoteList";
 import Pagination from "@/components/Pagination/Pagination";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import css from "@/app/(private routes)/notes/Notes.module.css";
+import Link from "next/link";
 
 type Props = {
   tag?: string;
@@ -33,6 +34,10 @@ export default function NotesClient({ tag }: Props) {
       <SearchBox value={search} onChange={setSearch} />
 
       {isLoading && <p>Loading...</p>}
+      
+<Link href="/notes/action/create" className={css.createLink}>
+  Create note
+</Link>
 
       {data && data.notes.length > 0 && (
         <>

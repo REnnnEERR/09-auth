@@ -109,7 +109,6 @@ components/SidebarNotes/SidebarNotes.module.css
 components/SidebarNotes/SidebarNotes.tsx
 components/TanStackProvider/TanStackProvider.tsx
 eslint.config.mjs
-lib/api.ts
 lib/api/api.ts
 lib/api/clientApi.ts
 lib/api/serverApi.ts
@@ -176,19 +175,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-````
-
-## File: app/(auth routes)/layout.tsx
-````typescript
-import React from "react";
-
-type Props = {
-  children: React.ReactNode;
-};
-
-export default function AuthLayout({ children }: Props) {
-  return <>{children}</>;
-}
 ````
 
 ## File: app/(auth routes)/sign-in/page.tsx
@@ -525,50 +511,6 @@ export default function NoteDetailsClient({ id }: Props) {
 }
 ````
 
-## File: app/(private routes)/notes/[id]/page.tsx
-````typescript
-import type { Metadata } from "next";
-import { fetchNoteById } from "@/lib/api";
-import NoteDetailsClient from "./NoteDetails.client";
-
-type PageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export async function generateMetadata(
-  params: Promise<{ id: string }>
-): Promise<Metadata> {
-  const { id } = await params;
-
-  const note = await fetchNoteById(id);
-
-  return {
-    title: `${note.title} | NoteHub`,
-    description: note.content.slice(0, 100),
-    openGraph: {
-      title: note.title,
-      description: note.content.slice(0, 100),
-      url: `https://notehub.vercel.app/notes/${note.id}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          width: 1200,
-          height: 630,
-          alt: note.title,
-        },
-      ],
-    },
-  };
-}
-
-export default async function NotePage({ params }: PageProps) {
-  const { id } = await params;
-  return <NoteDetailsClient id={id} />;
-}
-````
-
 ## File: app/(private routes)/notes/action/create/CreateNote.module.css
 ````css
 .main {
@@ -668,63 +610,6 @@ export default function FilterNotesError({
   );
 }
 ``
-````
-
-## File: app/(private routes)/notes/filter/[...slug]/page.tsx
-````typescript
-import type { Metadata } from "next";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import FilterNotesClient from "./Notes.client";
-
-export async function generateMetadata(
-  params: Promise<{ slug?: string[] }>
-): Promise<Metadata> {
-  const { slug } = await params;
-  const tag = slug?.[0] ?? "all";
-
-  return {
-    title: `Notes (${tag}) | NoteHub`,
-    description: `Notes filtered by tag: ${tag}`,
-    openGraph: {
-      title: `Notes (${tag}) | NoteHub`,
-      description: `Notes filtered by tag: ${tag}`,
-      url: `https://notehub.vercel.app/notes/filter/${tag}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          width: 1200,
-          height: 630,
-          alt: "Notes filter",
-        },
-      ],
-    },
-  };
-}
-
-type PageProps = {
-  params: Promise<{
-    slug?: string[];
-  }>;
-};
-
-export default async function FilteredNotesPage({ params }: PageProps) {
-  const { slug } = await params;
-  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
-
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", tag],
-    queryFn: () => fetchNotes(1, "", 12, tag),
-  });
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <FilterNotesClient tag={tag} />
-    </HydrationBoundary>
-  );
-}
 ````
 
 ## File: app/(private routes)/notes/filter/@sidebar/default.tsx
@@ -1850,72 +1735,6 @@ a.secondary {
 }
 ````
 
-## File: components/AuthNavigation/AuthNavigation.tsx
-````typescript
-"use client";
-
-import { useRouter } from "next/navigation";
-import { logout } from "@/lib/api/clientApi";
-import { useAuthStore } from "@/lib/store/authStore";
-import css from "./AuthNavigation.module.css";
-
-export default function AuthNavigation() {
-  const router = useRouter();
-  const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      clearIsAuthenticated();
-      router.push("/sign-in");
-    }
-  };
-
-  // ✅ НЕ АВТОРИЗОВАНИЙ
-  if (!isAuthenticated) {
-    return (
-      <>
-        <li className={css.navigationItem}>
-          <a href="/sign-in" className={css.navigationLink}>
-            Login
-          </a>
-        </li>
-
-        <li className={css.navigationItem}>
-          <a href="/sign-up" className={css.navigationLink}>
-            Sign up
-          </a>
-        </li>
-      </>
-    );
-  }
-
-  // ✅ АВТОРИЗОВАНИЙ
-  return (
-    <>
-      <li className={css.navigationItem}>
-        <a href="/profile" className={css.navigationLink}>
-          Profile
-        </a>
-      </li>
-
-      <li className={css.navigationItem}>
-        <p className={css.userEmail}>{user?.email}</p>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={css.logoutButton}
-        >
-          Logout
-        </button>
-      </li>
-    </>
-  );
-}
-``
-````
-
 ## File: components/AuthProvider/AuthProvider.tsx
 ````typescript
 "use client";
@@ -2291,64 +2110,6 @@ export default function Footer() {
 }
 ````
 
-## File: components/NoteList/NoteList.tsx
-````typescript
-"use client";
-
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { deleteNote } from '@/lib/api'; 
-import type { Note } from '@/types/note';
-import css from './NoteList.module.css';
-import Link from "next/link";
-
-interface NoteListProps {
-  notes: Note[];
-}
-
-const NoteList = ({ notes }: NoteListProps) => {
-  const queryClient = useQueryClient();
-
-  const { mutate } = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      toast.success('Нотатку видалено');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    },
-    onError: () => {
-      toast.error('Не вдалося видалити нотатку');
-    },
-  });
-
-  if (notes.length === 0) return <p>No notes found.</p>;
-
-  return (
-    <ul className={css.list}>
-      {notes.map((note) => (
-        <li key={note.id} className={css.listItem}>
-          <h2 className={css.title}>{note.title}</h2>
-          <p className={css.content}>{note.content}</p>
-          <div className={css.footer}>
-            <span className={css.tag}>{note.tag}</span>
-            <Link href={`/notes/${note.id}`} className={css.link}>
-              View details
-            </Link>
-            <button 
-              className={css.button} 
-              onClick={() => mutate(note.id)} 
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-export default NoteList;
-````
-
 ## File: components/NotePreview/NotePreview.module.css
 ````css
 .container {
@@ -2654,89 +2415,6 @@ export const api = axios.create({
 });
 ````
 
-## File: lib/api/serverApi.ts
-````typescript
-import axios from "axios";
-import { cookies } from "next/headers";
-import type { Note, FetchNotesResponse } from "@/types/note";
-import type { User } from "@/types/user";
-
-/**
- * Creates axios instance for server-side requests.
- * Cookies must be awaited and forwarded manually.
- */
-const createServerApi = async () => {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
-
-  return axios.create({
-    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-    headers: {
-      Cookie: cookieHeader,
-      "Content-Type": "application/json",
-    },
-    withCredentials: true,
-  });
-};
-
-/* =========================
-   AUTH / USER
-========================= */
-
-export const checkSession = async (): Promise<User | null> => {
-  try {
-    const api = await createServerApi();
-    const response = await api.get<User | null>("/auth/session");
-    return response.data;
-  } catch {
-    return null;
-  }
-};
-
-export const getMe = async (): Promise<User | null> => {
-  try {
-    const api = await createServerApi();
-    const response = await api.get<User>("/users/me");
-    return response.data;
-  } catch {
-    return null;
-  }
-};
-
-/* =========================
-   NOTES
-========================= */
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const api = await createServerApi();
-
-  const response = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      search,
-      perPage,
-      ...(tag ? { tag } : {}),
-    },
-  });
-
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const api = await createServerApi();
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
-};
-````
-
 ## File: lib/store/authStore.ts
 ````typescript
 import { create } from "zustand";
@@ -2928,174 +2606,80 @@ export interface User {
 }
 ````
 
-## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+## File: app/(auth routes)/layout.tsx
 ````typescript
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import css from "@/app/(private routes)/notes/Notes.module.css";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
-  tag?: string;
+  children: React.ReactNode;
 };
 
-export default function FilterNotesClient({ tag }: Props) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [debouncedSearch] = useDebounce(search, 500);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, tag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <section className={css.container}>
-      <div className={css.controls}>
-        <SearchBox
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-        />
-
-        <Link href="/notes/action/create" className={css.addButton}>
-          Add New Note
-        </Link>
-      </div>
-
-      {isLoading ? (
-        <p>Loading notes...</p>
-      ) : (
-        <>
-          <NoteList notes={data?.notes ?? []} />
-          <Pagination
-            currentPage={page}
-            pageCount={data?.totalPages ?? 1}
-            onPageChange={(e) => setPage(e.selected + 1)}
-          />
-        </>
-      )}
-    </section>
-  );
-}
-````
-
-## File: app/(private routes)/profile/edit/page.tsx
-````typescript
-"use client";
-
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { getMe, updateMe } from "@/lib/api/clientApi";
-import css from "./EditProfilePage.module.css";
-
-export default function EditProfilePage() {
+export default function AuthLayout({ children }: Props) {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState("");
-
   useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getMe();
-      setUsername(user.username);
-      setEmail(user.email);
-      setAvatar(user.avatar);
-    };
+    router.refresh();
+  }, [router]);
 
-    fetchUser();
-  }, []);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await updateMe({ username });
-    router.push("/profile");
-  };
-
-  return (
-    <main className={css.mainContent}>
-      <div className={css.profileCard}>
-        <h1 className={css.formTitle}>Edit Profile</h1>
-
-        <Image
-          src={avatar}
-          alt="User Avatar"
-          width={120}
-          height={120}
-          className={css.avatar}
-        />
-
-        <form className={css.profileInfo} onSubmit={handleSubmit}>
-          <div className={css.usernameWrapper}>
-            <label htmlFor="username">Username:</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className={css.input}
-              required
-            />
-          </div>
-
-          <p>Email: {email}</p>
-
-          <div className={css.actions}>
-            <button type="submit" className={css.saveButton}>
-              Save
-            </button>
-            <button
-              type="button"
-              className={css.cancelButton}
-              onClick={() => router.back()}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </main>
-  );
+  return <>{children}</>;
 }
 ````
 
-## File: app/@modal/(.)notes/[id]/page.tsx
+## File: app/(private routes)/notes/filter/[...slug]/page.tsx
 ````typescript
+import type { Metadata } from "next";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api";
-import NotePreviewClient from "./NotePreview.client";
+import { fetchNotes } from "@/lib/api/serverApi";
+import FilterNotesClient from "./Notes.client";
 
-type Params = Promise<{ id: string }>;
+export async function generateMetadata(
+  params: Promise<{ slug?: string[] }>
+): Promise<Metadata> {
+  const { slug } = await params;
+  const tag = slug?.[0] ?? "all";
 
-export default async function NotePreviewPage({
-  params,
-}: {
-  params: Params;
-}) {
-  const { id } = await params;
+  return {
+    title: `Notes (${tag}) | NoteHub`,
+    description: `Notes filtered by tag: ${tag}`,
+    openGraph: {
+      title: `Notes (${tag}) | NoteHub`,
+      description: `Notes filtered by tag: ${tag}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Notes filter",
+        },
+      ],
+    },
+  };
+}
+
+type PageProps = {
+  params: Promise<{
+    slug?: string[];
+  }>;
+};
+
+export default async function FilteredNotesPage({ params }: PageProps) {
+  const { slug } = await params;
+  const tag = slug?.[0] === "all" ? undefined : slug?.[0];
 
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
+    queryKey: ["notes", 1, "", tag],
+    queryFn: () => fetchNotes(1, "", 12, tag),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotePreviewClient id={id} />
+      <FilterNotesClient tag={tag} />
     </HydrationBoundary>
   );
 }
@@ -3208,11 +2792,124 @@ export default function NotFound() {
 }
 ````
 
+## File: components/AuthNavigation/AuthNavigation.tsx
+````typescript
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./AuthNavigation.module.css";
+
+export default function AuthNavigation() {
+  const router = useRouter();
+  const { isAuthenticated, user, clearIsAuthenticated } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+    clearIsAuthenticated();
+    router.push("/sign-in");
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <li className={css.navigationItem}>
+          <Link href="/sign-in" className={css.navigationLink}>
+            Login
+          </Link>
+        </li>
+        <li className={css.navigationItem}>
+          <Link href="/sign-up" className={css.navigationLink}>
+            Sign up
+          </Link>
+        </li>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <li className={css.navigationItem}>
+        <Link href="/profile" className={css.navigationLink}>
+          Profile
+        </Link>
+      </li>
+      <li className={css.navigationItem}>
+        <p className={css.userEmail}>{user?.email}</p>
+        <button className={css.logoutButton} onClick={handleLogout}>
+          Logout
+        </button>
+      </li>
+    </>
+  );
+}
+````
+
 ## File: components/Home/Home.tsx
 ````typescript
 export default function Home() {
   return null;
 }
+````
+
+## File: components/NoteList/NoteList.tsx
+````typescript
+"use client";
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { deleteNote } from "@/lib/api/clientApi";
+import type { Note } from '@/types/note';
+import css from './NoteList.module.css';
+import Link from "next/link";
+
+interface NoteListProps {
+  notes: Note[];
+}
+
+const NoteList = ({ notes }: NoteListProps) => {
+  const queryClient = useQueryClient();
+
+  const { mutate } = useMutation({
+    mutationFn: deleteNote,
+    onSuccess: () => {
+      toast.success('Нотатку видалено');
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    },
+    onError: () => {
+      toast.error('Не вдалося видалити нотатку');
+    },
+  });
+
+  if (notes.length === 0) return <p>No notes found.</p>;
+
+  return (
+    <ul className={css.list}>
+      {notes.map((note) => (
+        <li key={note.id} className={css.listItem}>
+          <h2 className={css.title}>{note.title}</h2>
+          <p className={css.content}>{note.content}</p>
+          <div className={css.footer}>
+            <span className={css.tag}>{note.tag}</span>
+            <Link href={`/notes/${note.id}`} className={css.link}>
+              View details
+            </Link>
+            <button 
+              className={css.button} 
+              onClick={() => mutate(note.id)} 
+            >
+              Delete
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export default NoteList;
 ````
 
 ## File: components/NotePreview/NotePreview.tsx
@@ -3360,6 +3057,74 @@ export const deleteNote = async (id: string): Promise<Note> => {
 };
 ````
 
+## File: lib/api/serverApi.ts
+````typescript
+import axios, { type AxiosResponse } from "axios";
+import { cookies } from "next/headers";
+import type { User } from "@/types/user";
+import type { Note, FetchNotesResponse } from "@/types/note";
+
+const createServerApi = async () => {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(c => `${c.name}=${c.value}`)
+    .join("; ");
+
+  return axios.create({
+    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+    headers: {
+      Cookie: cookieHeader,
+      "Content-Type": "application/json",
+    },
+    withCredentials: true,
+  });
+};
+
+export const checkSession = async (): Promise<AxiosResponse<User | null> | null> => {
+  try {
+    const api = await createServerApi();
+    return await api.get<User | null>("/auth/session");
+  } catch {
+    return null;
+  }
+};
+
+export const getMe = async (): Promise<User | null> => {
+  try {
+    const api = await createServerApi();
+    const res = await api.get<User>("/users/me");
+    return res.data;
+  } catch {
+    return null;
+  }
+};
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  const api = await createServerApi();
+  const res = await api.get<FetchNotesResponse>("/notes", {
+    params: {
+      page,
+      search,
+      perPage,
+      ...(tag ? { tag } : {}),
+    },
+  });
+  return res.data;
+};
+
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const api = await createServerApi();
+  const res = await api.get<Note>(`/notes/${id}`);
+  return res.data;
+};
+````
+
 ## File: next.config.ts
 ````typescript
 import type { NextConfig } from "next";
@@ -3378,85 +3143,167 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ````
 
-## File: proxy.ts
+## File: app/(private routes)/notes/[id]/page.tsx
 ````typescript
-import { NextResponse, type NextRequest } from "next/server";
+import type { Metadata } from "next";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { fetchNoteById } from "@/lib/api/serverApi";
+import NoteDetailsClient from "./NoteDetails.client";
 
-export default function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+type Params = Promise<{ id: string }>;
 
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+export async function generateMetadata({
+  params,
+}: {
+  params: Params;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const note = await fetchNoteById(id);
 
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  // ✅ перевіряємо КОНКРЕТНУ cookie сесії
-  const hasSession =
-    request.cookies.get("accessToken") ||
-    request.cookies.get("refreshToken");
-
-  if (isPrivateRoute && !hasSession) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  if (isAuthRoute && hasSession) {
-    return NextResponse.redirect(new URL("/profile", request.url));
-  }
-
-  return NextResponse.next();
+  return {
+    title: note.title,
+    description: note.content.slice(0, 100),
+  };
 }
 
-export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/notes/:path*",
-    "/sign-in",
-    "/sign-up",
-  ],
-};
-````
+export default async function NotePage({
+  params,
+}: {
+  params: Params;
+}) {
+  const { id } = await params;
 
-## File: app/@modal/(.)notes/[id]/NotePreview.client.tsx
-````typescript
-"use client";
+  const queryClient = new QueryClient();
 
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { fetchNoteById } from "@/lib/api";
-import NotePreview from "@/components/NotePreview/NotePreview";
-import { Modal } from "@/components/Modal/Modal";
-import css from "@/components/NotePreview/NotePreview.module.css";
-
-type Props = {
-  id: string;
-};
-
-export default function NotePreviewClient({ id }: Props) {
-  const router = useRouter();
-
-  const { data, isLoading, isError } = useQuery({
+  await queryClient.prefetchQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
-    enabled: !!id,
-    refetchOnMount: false,
   });
 
   return (
-    <Modal onClose={() => router.back()}>
-      
-      <button
-        type="button"
-        className={css.backBtn}
-        onClick={() => router.back()}
-      >
-        Back
-      </button>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NoteDetailsClient id={id} />
+    </HydrationBoundary>
+  );
+}
+````
 
-      {isLoading && <p>Loading...</p>}
-      {isError && <p>Failed to load note.</p>}
-      {data && <NotePreview note={data} />}
-    </Modal>
+## File: app/(private routes)/profile/edit/page.tsx
+````typescript
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getMe, updateMe } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import css from "./EditProfilePage.module.css";
+
+export default function EditProfilePage() {
+  const router = useRouter();
+  const setUser = useAuthStore(state => state.setUser);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getMe();
+      setUsername(user.username);
+      setEmail(user.email);
+      setAvatar(user.avatar);
+    };
+    fetchUser();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // ✅ отримуємо оновленого користувача
+    const updatedUser = await updateMe({ username });
+
+    // ✅ ОБОВʼЯЗКОВО оновлюємо глобальний auth store
+    setUser(updatedUser);
+
+    router.push("/profile");
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <div className={css.profileCard}>
+        <h1 className={css.formTitle}>Edit Profile</h1>
+
+        {avatar && (
+          <Image
+            src={avatar}
+            alt="User Avatar"
+            width={120}
+            height={120}
+            className={css.avatar}
+          />
+        )}
+
+        <form className={css.profileInfo} onSubmit={handleSubmit}>
+          <div className={css.usernameWrapper}>
+            <label htmlFor="username">Username:</label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className={css.input}
+              required
+            />
+          </div>
+
+          <p>Email: {email}</p>
+
+          <div className={css.actions}>
+            <button type="submit" className={css.saveButton}>
+              Save
+            </button>
+            <button
+              type="button"
+              className={css.cancelButton}
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}
+````
+
+## File: app/@modal/(.)notes/[id]/page.tsx
+````typescript
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
+import { fetchNoteById } from "@/lib/api/serverApi";
+import NotePreviewClient from "./NotePreview.client";
+
+type Params = Promise<{ id: string }>;
+
+export default async function NotePreviewPage({
+  params,
+}: {
+  params: Params;
+}) {
+  const { id } = await params;
+
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: ["note", id],
+    queryFn: () => fetchNoteById(id),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NotePreviewClient id={id} />
+    </HydrationBoundary>
   );
 }
 ````
@@ -3532,6 +3379,164 @@ export const Pagination = ({ pageCount, currentPage, onPageChange }: PaginationP
 };
 
 export default Pagination;
+````
+
+## File: proxy.ts
+````typescript
+import { NextResponse, type NextRequest } from "next/server";
+import { checkSession } from "@/lib/api/serverApi";
+
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // ✅ не чіпаємо API
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  
+  if (request.method === "OPTIONS") {
+    return NextResponse.next();
+  }
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  const accessToken = request.cookies.get("accessToken");
+  const refreshToken = request.cookies.get("refreshToken");
+
+ 
+  if (!accessToken && refreshToken) {
+    const response = await checkSession();
+
+    if (!response) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+  }
+
+  
+  if (isPrivateRoute && !accessToken && !refreshToken) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  
+  if (isAuthRoute && accessToken) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+    "/api/:path*",
+  ],
+};
+````
+
+## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+````typescript
+"use client";
+
+import { useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
+import { fetchNotes } from "@/lib/api/clientApi";
+import NoteList from "@/components/NoteList/NoteList";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import css from "@/app/(private routes)/notes/Notes.module.css";
+
+type Props = {
+  tag?: string;
+};
+
+export default function NotesClient({ tag }: Props) {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 500);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["notes", page, debouncedSearch, tag],
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
+    placeholderData: keepPreviousData,
+  });
+
+  const handlePageChange = (selectedItem: { selected: number }) => {
+    setPage(selectedItem.selected);
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <SearchBox value={search} onChange={setSearch} />
+
+      {isLoading && <p>Loading...</p>}
+
+      {data && data.notes.length > 0 && (
+        <>
+          <NoteList notes={data.notes} />
+
+          <Pagination
+            pageCount={data.totalPages}
+            currentPage={page}         
+            onPageChange={handlePageChange}
+          />
+        </>
+      )}
+    </main>
+  );
+}
+````
+
+## File: app/@modal/(.)notes/[id]/NotePreview.client.tsx
+````typescript
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { fetchNoteById } from "@/lib/api/clientApi";
+import NotePreview from "@/components/NotePreview/NotePreview";
+import { Modal } from "@/components/Modal/Modal";
+import css from "@/components/NotePreview/NotePreview.module.css";
+
+type Props = {
+  id: string;
+};
+
+export default function NotePreviewClient({ id }: Props) {
+  const router = useRouter();
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["note", id],
+    queryFn: () => fetchNoteById(id),
+    enabled: !!id,
+    refetchOnMount: false,
+  });
+
+  return (
+    <Modal onClose={() => router.back()}>
+      
+      <button
+        type="button"
+        className={css.backBtn}
+        onClick={() => router.back()}
+      >
+        Back
+      </button>
+
+      {isLoading && <p>Loading...</p>}
+      {isError && <p>Failed to load note.</p>}
+      {data && <NotePreview note={data} />}
+    </Modal>
+  );
+}
 ````
 
 ## File: app/page.tsx
@@ -3640,7 +3645,7 @@ export interface FetchNotesResponse {
 import { FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote } from "@/lib/api";
+import { createNote } from "@/lib/api/clientApi";
 import { useNoteStore } from "@/lib/store/noteStore";
 import css from "./NoteForm.module.css";
 
@@ -3739,55 +3744,6 @@ export default function NoteForm() {
     </form>
   );
 }
-````
-
-## File: lib/api.ts
-````typescript
-import axios from "axios";
-import { FetchNotesResponse, Note } from "@/types/note";
-
-const api = axios.create({
-  baseURL: "https://notehub-public.goit.study/api",
-  headers: {
-    Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-  },
-});
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const response = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      perPage,
-      search,
-      ...(tag ? { tag } : {}),
-    },
-  });
-
-  return response.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const response = await api.get<Note>(`/notes/${id}`);
-  return response.data;
-};
-
-export const createNote = async (
-  note: Omit<Note, "id" | "createdAt" | "updatedAt">
-): Promise<Note> => {
-  const response = await api.post<Note>("/notes", note);
-  return response.data;
-};
-
-
-export const deleteNote = async (id: string): Promise<Note> => {
-  const response = await api.delete<Note>(`/notes/${id}`);
-  return response.data;
-};
 ````
 
 ## File: package.json
