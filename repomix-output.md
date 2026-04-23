@@ -3057,74 +3057,6 @@ export const deleteNote = async (id: string): Promise<Note> => {
 };
 ````
 
-## File: lib/api/serverApi.ts
-````typescript
-import axios, { type AxiosResponse } from "axios";
-import { cookies } from "next/headers";
-import type { User } from "@/types/user";
-import type { Note, FetchNotesResponse } from "@/types/note";
-
-const createServerApi = async () => {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map(c => `${c.name}=${c.value}`)
-    .join("; ");
-
-  return axios.create({
-    baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-    headers: {
-      Cookie: cookieHeader,
-      "Content-Type": "application/json",
-    },
-    withCredentials: true,
-  });
-};
-
-export const checkSession = async (): Promise<AxiosResponse<User | null> | null> => {
-  try {
-    const api = await createServerApi();
-    return await api.get<User | null>("/auth/session");
-  } catch {
-    return null;
-  }
-};
-
-export const getMe = async (): Promise<User | null> => {
-  try {
-    const api = await createServerApi();
-    const res = await api.get<User>("/users/me");
-    return res.data;
-  } catch {
-    return null;
-  }
-};
-
-export const fetchNotes = async (
-  page = 1,
-  search = "",
-  perPage = 12,
-  tag?: string
-): Promise<FetchNotesResponse> => {
-  const api = await createServerApi();
-  const res = await api.get<FetchNotesResponse>("/notes", {
-    params: {
-      page,
-      search,
-      perPage,
-      ...(tag ? { tag } : {}),
-    },
-  });
-  return res.data;
-};
-
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const api = await createServerApi();
-  const res = await api.get<Note>(`/notes/${id}`);
-  return res.data;
-};
-````
-
 ## File: next.config.ts
 ````typescript
 import type { NextConfig } from "next";
@@ -3381,118 +3313,61 @@ export const Pagination = ({ pageCount, currentPage, onPageChange }: PaginationP
 export default Pagination;
 ````
 
-## File: proxy.ts
+## File: lib/api/serverApi.ts
 ````typescript
-import { NextResponse, type NextRequest } from "next/server";
-import { checkSession } from "@/lib/api/serverApi";
+import { cookies } from "next/headers";
+import type { AxiosResponse } from "axios";
+import { api } from "@/lib/api/api";
+import type { User } from "@/types/user";
+import type { Note, FetchNotesResponse } from "@/types/note";
 
-export default async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+const attachCookies = async () => {
+  const cookieStore = await cookies(); // ✅ await
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(c => `${c.name}=${c.value}`)
+    .join("; ");
 
-  // ✅ не чіпаємо API
-  if (pathname.startsWith("/api")) {
-    return NextResponse.next();
-  }
-
-  
-  if (request.method === "OPTIONS") {
-    return NextResponse.next();
-  }
-
-  const isPrivateRoute =
-    pathname.startsWith("/profile") || pathname.startsWith("/notes");
-
-  const isAuthRoute =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  const accessToken = request.cookies.get("accessToken");
-  const refreshToken = request.cookies.get("refreshToken");
-
- 
-  if (!accessToken && refreshToken) {
-    const response = await checkSession();
-
-    if (!response) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
-  }
-
-  
-  if (isPrivateRoute && !accessToken && !refreshToken) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  
-  if (isAuthRoute && accessToken) {
-    return NextResponse.redirect(new URL("/profile", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: [
-    "/profile/:path*",
-    "/notes/:path*",
-    "/sign-in",
-    "/sign-up",
-    "/api/:path*",
-  ],
-};
-````
-
-## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
-````typescript
-"use client";
-
-import { useState } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api/clientApi";
-import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
-import css from "@/app/(private routes)/notes/Notes.module.css";
-
-type Props = {
-  tag?: string;
+  api.defaults.headers.Cookie = cookieHeader;
 };
 
-export default function NotesClient({ tag }: Props) {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch] = useDebounce(search, 500);
+export const checkSession = async (): Promise<AxiosResponse<User | null> | null> => {
+  try {
+    await attachCookies();
+    return await api.get<User | null>("/auth/session");
+  } catch {
+    return null;
+  }
+};
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["notes", page, debouncedSearch, tag],
-    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
-    placeholderData: keepPreviousData,
+export const getMe = async (): Promise<User | null> => {
+  try {
+    await attachCookies();
+    const res = await api.get<User>("/users/me");
+    return res.data;
+  } catch {
+    return null;
+  }
+};
+
+export const fetchNotes = async (
+  page = 1,
+  search = "",
+  perPage = 12,
+  tag?: string
+): Promise<FetchNotesResponse> => {
+  await attachCookies();
+  const res = await api.get<FetchNotesResponse>("/notes", {
+    params: { page, search, perPage, ...(tag ? { tag } : {}) },
   });
+  return res.data;
+};
 
-  const handlePageChange = (selectedItem: { selected: number }) => {
-    setPage(selectedItem.selected);
-  };
-
-  return (
-    <main className={css.mainContent}>
-      <SearchBox value={search} onChange={setSearch} />
-
-      {isLoading && <p>Loading...</p>}
-
-      {data && data.notes.length > 0 && (
-        <>
-          <NoteList notes={data.notes} />
-
-          <Pagination
-            pageCount={data.totalPages}
-            currentPage={page}         
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
-    </main>
-  );
-}
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  await attachCookies();
+  const res = await api.get<Note>(`/notes/${id}`);
+  return res.data;
+};
 ````
 
 ## File: app/@modal/(.)notes/[id]/NotePreview.client.tsx
@@ -3559,6 +3434,133 @@ export default function HomePage() {
   );
 }
 console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+````
+
+## File: proxy.ts
+````typescript
+import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { checkSession } from "@/lib/api/serverApi";
+
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // ✅ API та preflight пропускаємо
+  if (pathname.startsWith("/api") || request.method === "OPTIONS") {
+    return NextResponse.next();
+  }
+
+  const cookieStore = await cookies(); // ✅ await
+
+  const accessToken = cookieStore.get("accessToken")?.value;
+  const refreshToken = cookieStore.get("refreshToken")?.value;
+
+  const isPrivateRoute =
+    pathname.startsWith("/profile") || pathname.startsWith("/notes");
+
+  const isAuthRoute =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+  // ✅ якщо access немає, але refresh є → пробуємо оновити сесію
+  if (!accessToken && refreshToken) {
+    const response = await checkSession();
+
+    if (!response) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+
+    // ✅ прокидуємо оновлені cookies
+    const setCookies = response.headers["set-cookie"];
+    if (setCookies) {
+      const res = NextResponse.next();
+      setCookies.forEach((cookie: string) =>
+        res.headers.append("set-cookie", cookie)
+      );
+      return res;
+    }
+  }
+
+  // ❌ зовсім неавторизований → приватна сторінка
+  if (isPrivateRoute && !accessToken && !refreshToken) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  // ✅ авторизований → auth‑сторінки → /
+  if (isAuthRoute && accessToken) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+    "/api/:path*",
+  ],
+};
+````
+
+## File: app/(private routes)/notes/filter/[...slug]/Notes.client.tsx
+````typescript
+"use client";
+
+import { useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
+import { fetchNotes } from "@/lib/api/clientApi";
+import NoteList from "@/components/NoteList/NoteList";
+import Pagination from "@/components/Pagination/Pagination";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import css from "@/app/(private routes)/notes/Notes.module.css";
+import Link from "next/link";
+
+type Props = {
+  tag?: string;
+};
+
+export default function NotesClient({ tag }: Props) {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 500);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["notes", page, debouncedSearch, tag],
+    queryFn: () => fetchNotes(page, debouncedSearch, 12, tag),
+    placeholderData: keepPreviousData,
+  });
+
+  const handlePageChange = (selectedItem: { selected: number }) => {
+    setPage(selectedItem.selected);
+  };
+
+  return (
+    <main className={css.mainContent}>
+      <SearchBox value={search} onChange={setSearch} />
+
+      {isLoading && <p>Loading...</p>}
+      
+<Link href="/notes/action/create" className={css.createLink}>
+  Create note
+</Link>
+
+      {data && data.notes.length > 0 && (
+        <>
+          <NoteList notes={data.notes} />
+
+          <Pagination
+            pageCount={data.totalPages}
+            currentPage={page}         
+            onPageChange={handlePageChange}
+          />
+        </>
+      )}
+    </main>
+  );
+}
 ````
 
 ## File: components/Modal/Modal.tsx

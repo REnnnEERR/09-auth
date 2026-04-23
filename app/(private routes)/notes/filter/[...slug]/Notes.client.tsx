@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { fetchNotes } from "@/lib/api/clientApi";
@@ -10,6 +10,7 @@ import SearchBox from "@/components/SearchBox/SearchBox";
 import css from "@/app/(private routes)/notes/Notes.module.css";
 import Link from "next/link";
 
+
 type Props = {
   tag?: string;
 };
@@ -18,6 +19,13 @@ export default function NotesClient({ tag }: Props) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
+
+  useEffect(() => {
+  if (page !== 1) {  
+    setPage(1);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [debouncedSearch]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["notes", page, debouncedSearch, tag],

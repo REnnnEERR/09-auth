@@ -4,20 +4,22 @@ import { api } from "@/lib/api/api";
 import type { User } from "@/types/user";
 import type { Note, FetchNotesResponse } from "@/types/note";
 
-const attachCookies = async () => {
-  const cookieStore = await cookies(); // ✅ await
-  const cookieHeader = cookieStore
+const getCookieHeader = async (): Promise<string> => {
+  const cookieStore = await cookies();
+  return cookieStore
     .getAll()
     .map(c => `${c.name}=${c.value}`)
     .join("; ");
-
-  api.defaults.headers.Cookie = cookieHeader;
 };
 
 export const checkSession = async (): Promise<AxiosResponse<User | null> | null> => {
   try {
-    await attachCookies();
-    return await api.get<User | null>("/auth/session");
+    const cookieHeader = await getCookieHeader();
+    return await api.get<User | null>("/auth/session", {
+      headers: {
+        Cookie: cookieHeader,  
+      },
+    });
   } catch {
     return null;
   }
@@ -25,7 +27,7 @@ export const checkSession = async (): Promise<AxiosResponse<User | null> | null>
 
 export const getMe = async (): Promise<User | null> => {
   try {
-    await attachCookies();
+    await getCookieHeader();
     const res = await api.get<User>("/users/me");
     return res.data;
   } catch {
@@ -39,7 +41,7 @@ export const fetchNotes = async (
   perPage = 12,
   tag?: string
 ): Promise<FetchNotesResponse> => {
-  await attachCookies();
+  await getCookieHeader();
   const res = await api.get<FetchNotesResponse>("/notes", {
     params: { page, search, perPage, ...(tag ? { tag } : {}) },
   });
@@ -47,7 +49,7 @@ export const fetchNotes = async (
 };
 
 export const fetchNoteById = async (id: string): Promise<Note> => {
-  await attachCookies();
+  await getCookieHeader();
   const res = await api.get<Note>(`/notes/${id}`);
   return res.data;
 };
